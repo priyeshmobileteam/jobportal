@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { JobNotificationBanner } from './components/JobNotificationBanner';
 import { Sidebar } from './components/Sidebar';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
@@ -86,6 +87,7 @@ function App() {
         onToggleDarkMode={toggleDarkMode}
         setView={setView}
       />
+      <JobNotificationBanner />
       <div className="flex">
         {isAuthenticated && (
           <Sidebar
