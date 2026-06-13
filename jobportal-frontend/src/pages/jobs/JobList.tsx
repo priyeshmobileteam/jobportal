@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { Job } from '../../types';
 import { Search, MapPin, Briefcase, RefreshCw, Send, CheckCircle2 } from 'lucide-react';
+import { AdSenseAd } from '../../components/AdSenseAd';
 
 export const JobList: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -215,6 +216,9 @@ export const JobList: React.FC = () => {
         </button>
       </form>
 
+      {/* Top Banner Ad */}
+      <AdSenseAd slot="9876543210" />
+
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Job List */}
@@ -351,8 +355,11 @@ export const JobList: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-400 dark:text-slate-500 glass-panel rounded-3xl border border-dashed border-slate-300/30">
-              Select a job card to view descriptions and apply.
+            <div className="space-y-4">
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500 glass-panel rounded-3xl border border-dashed border-slate-300/30">
+                Select a job card to view descriptions and apply.
+              </div>
+              <AdSenseAd slot="4567890123" />
             </div>
           )}
         </div>
