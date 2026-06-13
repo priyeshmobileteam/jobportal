@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: jobportal-db
+    environment:
+      POSTGRES_DB: jobportal
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - jobportal-network
+
+  backend-api:
+    build:
+      context: ./jobportal-backend
+      dockerfile: Dockerfile
+    container_name: jobportal-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/jobportal
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+    depends_on:
+      - postgres-db
+    networks:
+      - jobportal-network
+
+  frontend-app:
+    build:
+      context: ./jobportal-frontend
+      dockerfile: Dockerfile
+    container_name: jobportal-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend-api
+    networks:
+      - jobportal-network
+
+volumes:
+  pgdata:
+
+networks:
+  jobportal-network:
+    driver: bridge
