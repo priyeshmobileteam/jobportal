@@ -9,8 +9,8 @@ interface AdSenseAdProps {
 }
 
 export function AdSenseAd({
-  client = 'ca-pub-1234567890123456', // Replace with your actual publisher ID when ready
-  slot = '1234567890',                  // Replace with your actual ad slot ID
+  client = 'ca-pub-6082042405894709', // Real publisher ID from AdSense screenshot
+  slot = '1234567890',                  // Replace with your actual ad slot ID in the future if needed
   format = 'auto',
   responsive = 'true',
   style = { display: 'block', minWidth: '250px', minHeight: '90px' }
