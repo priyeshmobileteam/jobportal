@@ -9,6 +9,10 @@ interface Job {
   jobType: string;
 }
 
+interface Props {
+  setView: (view: string) => void;
+}
+
 const TILE_COLORS = [
   'bg-red-600',
   'bg-orange-500',
@@ -22,7 +26,7 @@ const TILE_COLORS = [
   'bg-rose-700',
 ];
 
-export function JobNotificationBanner() {
+export function JobNotificationBanner({ setView }: Props) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [visible, setVisible] = useState(true);
 
@@ -58,11 +62,27 @@ export function JobNotificationBanner() {
             {jobs.map((job, index) => (
               <div
                 key={job.id}
-                className={`${TILE_COLORS[index % TILE_COLORS.length]} text-white text-xs font-semibold px-3 py-1.5 rounded cursor-pointer hover:opacity-90 transition-opacity whitespace-nowrap flex items-center gap-1 shadow`}
+                onClick={() => {
+                  setView('jobs');
+                  // Dispatch custom event to select job in the JobList component
+                  window.dispatchEvent(new CustomEvent('select-job', { detail: { id: job.id } }));
+                  // small delay to let jobs page render, then highlight
+                  setTimeout(() => {
+                    const el = document.getElementById(`job-row-${job.id}`);
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      el.classList.add('ring-2', 'ring-yellow-400', 'bg-yellow-50', 'dark:bg-yellow-900/20');
+                      setTimeout(() => el.classList.remove('ring-2', 'ring-yellow-400', 'bg-yellow-50', 'dark:bg-yellow-900/20'), 3000);
+                    }
+                  }, 400);
+                }}
+                title={`${job.title} - ${job.companyName} | ${job.location}`}
+                className={`${TILE_COLORS[index % TILE_COLORS.length]} text-white text-xs font-semibold px-3 py-1.5 rounded cursor-pointer hover:scale-105 hover:shadow-lg active:scale-95 transition-all duration-150 whitespace-nowrap flex items-center gap-1 shadow select-none`}
               >
+                <span>📢</span>
                 <span>{job.title}</span>
                 {job.companyName && (
-                  <span className="opacity-75 font-normal">| {job.companyName}</span>
+                  <span className="opacity-80 font-normal">| {job.companyName}</span>
                 )}
               </div>
             ))}

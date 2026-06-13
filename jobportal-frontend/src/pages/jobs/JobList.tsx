@@ -113,6 +113,21 @@ export const JobList: React.FC = () => {
     fetchAllJobs();
   }, []);
 
+  useEffect(() => {
+    const handleSelectJob = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const jobId = customEvent.detail?.id;
+      if (jobId) {
+        const foundJob = jobs.find(j => j.id === jobId) || allJobs.find(j => j.id === jobId);
+        if (foundJob) {
+          setSelectedJob(foundJob);
+        }
+      }
+    };
+    window.addEventListener('select-job', handleSelectJob);
+    return () => window.removeEventListener('select-job', handleSelectJob);
+  }, [jobs, allJobs]);
+
   // Dynamically extract unique cities & job titles from fetched database jobs
   const citySuggestions = Array.from(new Set(allJobs.map(j => j.location).filter(Boolean)));
   const titleSuggestions = Array.from(new Set(allJobs.map(j => j.title).filter(Boolean)));
@@ -230,6 +245,7 @@ export const JobList: React.FC = () => {
                     {jobs.map((job) => (
                       <tr
                         key={job.id}
+                        id={`job-row-${job.id}`}
                         onClick={() => setSelectedJob(job as any)}
                         className={`cursor-pointer transition duration-150 hover:bg-indigo-50/10 ${
                           selectedJob?.id === job.id ? 'bg-indigo-500/10 dark:bg-indigo-500/15' : ''

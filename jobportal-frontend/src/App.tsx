@@ -87,7 +87,7 @@ function App() {
         onToggleDarkMode={toggleDarkMode}
         setView={setView}
       />
-      <JobNotificationBanner />
+      <JobNotificationBanner setView={setView} />
       <div className="flex">
         {isAuthenticated && (
           <Sidebar
