@@ -20,6 +20,12 @@ export const AdSensePlaceholder: React.FC<AdSensePlaceholderProps> = ({
   className = '',
   label = 'Google AdSense Banner'
 }) => {
+  const isAdFree = localStorage.getItem('user_ad_free') === 'true';
+
+  if (isAdFree) {
+    return null;
+  }
+
   // Configurable Publisher ID helper (global)
   const [pubId, setPubIdState] = useState(() => {
     return localStorage.getItem('adsense_pub_id') || 'ca-pub-9222595088627935';

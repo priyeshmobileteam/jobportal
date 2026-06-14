@@ -25,6 +25,22 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
   const [loading, setLoading] = useState(true);
   const [, setAdminClicks] = useState(0);
 
+  // Premium & Ad-Free Checkout state
+  const [isPremium, setIsPremium] = useState(() => localStorage.getItem('user_ad_free') === 'true');
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isBottomAdDismissed, setIsBottomAdDismissed] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState<'plans' | 'payment' | 'success'>('plans');
+  const [selectedPlan, setSelectedPlan] = useState({ name: 'Annual Ad-Free Pass', price: 99 });
+  const [upiId, setUpiId] = useState('');
+
+  const handleUpgradeSuccess = () => {
+    localStorage.setItem('user_ad_free', 'true');
+    setIsPremium(true);
+    // Dispatch local event so other components immediately know about state update
+    window.dispatchEvent(new Event('storage'));
+    setCheckoutStep('success');
+  };
+
   // Fetch posts and increment global site views count
   useEffect(() => {
     // Record hit & get total views
@@ -125,8 +141,22 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
             <a href="#syllabus" className="px-4 py-3 hover:bg-blue-800 transition-colors border-r border-blue-800/40">Syllabus</a>
             <a href="#answer-key" className="px-4 py-3 hover:bg-blue-800 transition-colors">Answer Key</a>
           </div>
-          <div className="hidden lg:flex items-center px-4 py-2 font-mono text-xs text-yellow-300">
-            Realtime Job Alert Portal
+          <div className="flex items-center gap-3">
+            {isPremium ? (
+              <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-900 font-extrabold text-[10px] tracking-wide uppercase px-2.5 py-1 rounded-full shadow border border-yellow-300 flex items-center gap-1">
+                ⭐ Premium Active
+              </span>
+            ) : (
+              <button 
+                onClick={() => setIsCheckoutOpen(true)}
+                className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold text-[10px] tracking-wide uppercase px-3 py-1.5 rounded-full shadow transition-all hover:scale-105 flex items-center gap-1 cursor-pointer"
+              >
+                🚫 Remove Ads
+              </button>
+            )}
+            <div className="hidden lg:flex items-center px-4 py-2 font-mono text-xs text-yellow-300">
+              Realtime Job Alert Portal
+            </div>
           </div>
         </div>
       </nav>
@@ -411,11 +441,176 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
       </footer>
 
       {/* 8. Sticky Bottom Ad Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-yellow-50/90 border-t border-yellow-200 shadow-md">
-        <div className="max-w-4xl mx-auto relative flex justify-center">
-          <AdSensePlaceholder slot="sticky-bottom" format="horizontal" label="Sticky Bottom Anchor Ad" className="!my-0 border-none rounded-none !py-2 h-[75px] w-full" />
+      {!isBottomAdDismissed && !isPremium && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-yellow-50/90 border-t border-yellow-200 shadow-md">
+          <div className="max-w-4xl mx-auto relative flex justify-center items-center">
+            <AdSensePlaceholder slot="sticky-bottom" format="horizontal" label="Sticky Bottom Anchor Ad" className="!my-0 border-none rounded-none !py-2 h-[75px] w-full" />
+            <button 
+              onClick={() => setIsBottomAdDismissed(true)} 
+              className="absolute -top-3 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs shadow-md border-2 border-white transition-all cursor-pointer z-50"
+              title="Close Ad"
+            >
+              ✕
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Premium Upgrade & Payment Gateway Modal */}
+      {isCheckoutOpen && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-900 to-indigo-950 text-white p-6 relative text-left">
+              <button 
+                onClick={() => { setIsCheckoutOpen(false); setCheckoutStep('plans'); }}
+                className="absolute top-4 right-4 text-slate-300 hover:text-white text-lg font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+              <h3 className="text-xl font-extrabold flex items-center gap-2">
+                <span>⭐ Unlock Premium (Ad-Free)</span>
+              </h3>
+              <p className="text-xs text-blue-200 mt-1">Support Nokri.online and browse vacancy tables with zero ads.</p>
+            </div>
+
+            {/* Step 1: Subscription Plans */}
+            {checkoutStep === 'plans' && (
+              <div className="p-6 space-y-4 text-left">
+                <div className="space-y-3">
+                  <div 
+                    onClick={() => setSelectedPlan({ name: 'Monthly Basic ad-free', price: 19 })}
+                    className={`border-2 rounded-xl p-4 flex justify-between items-center cursor-pointer transition-all hover:border-blue-900/50 ${selectedPlan.price === 19 ? 'border-blue-900 bg-blue-50/50' : 'border-slate-200'}`}
+                  >
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">Monthly Plan</h4>
+                      <p className="text-xs text-slate-500">Perfect for temporary exam season checks</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-extrabold text-blue-900">₹19</span>
+                      <span className="text-xs text-slate-400 block">/ month</span>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => setSelectedPlan({ name: 'Annual Ad-Free Pass', price: 99 })}
+                    className={`border-2 rounded-xl p-4 flex justify-between items-center cursor-pointer transition-all hover:border-blue-900/50 ${selectedPlan.price === 99 ? 'border-blue-900 bg-blue-50/50 shadow-md' : 'border-slate-200'}`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-bold text-slate-800 text-sm">Annual Pass</h4>
+                        <span className="bg-amber-100 text-amber-800 font-extrabold text-[9px] px-1.5 py-0.5 rounded uppercase">Best Value</span>
+                      </div>
+                      <p className="text-xs text-slate-500">Full 12 months access to premium ad-free portal</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-extrabold text-blue-900">₹99</span>
+                      <span className="text-xs text-slate-400 block">/ year</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
+                  <h5 className="font-bold text-xs text-slate-700 uppercase tracking-wider">Premium Perks</h5>
+                  <ul className="text-xs text-slate-600 space-y-1.5">
+                    <li className="flex items-center gap-2">✔ 100% Ad-Free Experience</li>
+                    <li className="flex items-center gap-2">✔ Faster Vacancy Loading Speed</li>
+                    <li className="flex items-center gap-2">✔ Priority Scraper Synchronization Alerts</li>
+                    <li className="flex items-center gap-2">✔ Exclusive WhatsApp Channel Job Updates</li>
+                  </ul>
+                </div>
+
+                <button 
+                  onClick={() => setCheckoutStep('payment')}
+                  className="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-3 rounded-xl shadow-lg transition-all hover:scale-102 flex justify-center items-center gap-1 cursor-pointer text-sm"
+                >
+                  Proceed to Checkout (₹{selectedPlan.price})
+                </button>
+              </div>
+            )}
+
+            {/* Step 2: Payment Gateway Integration Page */}
+            {checkoutStep === 'payment' && (
+              <div className="p-6 space-y-4 text-left">
+                <div className="border-b border-slate-100 pb-3">
+                  <div className="flex justify-between items-center text-xs text-slate-500">
+                    <span>Selected Plan:</span>
+                    <span className="font-bold text-slate-800">{selectedPlan.name}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-bold text-slate-800 mt-1">
+                    <span>Total Amount due:</span>
+                    <span className="text-lg text-blue-900">₹{selectedPlan.price}.00</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-600 uppercase">Payment Option</label>
+                    <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                      <div className="border-2 border-blue-900 bg-blue-50/20 rounded-lg p-2.5 font-bold text-blue-900">
+                        UPI (PhonePe, GPay, Paytm)
+                      </div>
+                      <div className="border border-slate-200 rounded-lg p-2.5 text-slate-400 font-semibold cursor-not-allowed">
+                        Credit / Debit Card
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-600 uppercase">Enter UPI ID</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. user@ybl, user@paytm" 
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900 text-sm"
+                    />
+                  </div>
+
+                  <div className="bg-slate-50 p-3 rounded-xl text-[10px] text-slate-500 border border-slate-100 flex items-center gap-2">
+                    <span>🔒 SECURE END-TO-END ENCRYPTED GATEWAY</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    onClick={() => setCheckoutStep('plans')}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all cursor-pointer text-xs"
+                  >
+                    Back
+                  </button>
+                  <button 
+                    onClick={handleUpgradeSuccess}
+                    disabled={!upiId.trim()}
+                    className={`flex-1 text-white font-bold py-3 rounded-xl shadow-lg transition-all text-xs flex justify-center items-center gap-1 cursor-pointer ${upiId.trim() ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-300 cursor-not-allowed'}`}
+                  >
+                    Verify & Pay Now
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Success Screen */}
+            {checkoutStep === 'success' && (
+              <div className="p-8 text-center space-y-4">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto border-2 border-emerald-300 animate-bounce">
+                  ✔
+                </div>
+                <h4 className="text-xl font-black text-slate-800">Payment Successful!</h4>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Your premium role <strong>PREMIUM</strong> has been activated. Enjoy an entirely ad-free experience at Nokri.online.
+                </p>
+                <button 
+                  onClick={() => { setIsCheckoutOpen(false); setCheckoutStep('plans'); }}
+                  className="bg-blue-900 hover:bg-blue-950 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-md cursor-pointer text-xs"
+                >
+                  Return to Portal
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
