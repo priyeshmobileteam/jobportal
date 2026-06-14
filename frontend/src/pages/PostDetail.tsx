@@ -40,6 +40,9 @@ export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
         if (data.adsEnabled !== undefined) {
           localStorage.setItem('global_ads_enabled', data.adsEnabled.toString());
         }
+        if (data.razorpayKeyId) {
+          localStorage.setItem('razorpay_key_id', data.razorpayKeyId);
+        }
       })
       .catch(err => console.error('Failed to fetch stats', err));
   }, []);

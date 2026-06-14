@@ -32,7 +32,6 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
   const [isBottomAdDismissed, setIsBottomAdDismissed] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'plans' | 'payment' | 'success'>('plans');
   const [selectedPlan, setSelectedPlan] = useState({ name: 'Annual Ad-Free Pass', price: 99 });
-  const [upiId, setUpiId] = useState('');
 
   const handleUpgradeSuccess = () => {
     localStorage.setItem('user_ad_free', 'true');
@@ -40,6 +39,54 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
     // Dispatch local event so other components immediately know about state update
     window.dispatchEvent(new Event('storage'));
     setCheckoutStep('success');
+  };
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayWithRazorpay = async () => {
+    const isLoaded = await loadRazorpayScript();
+    if (!isLoaded) {
+      alert('Razorpay SDK failed to load. Please check your internet connection.');
+      return;
+    }
+
+    const keyId = localStorage.getItem('razorpay_key_id') || 'rzp_test_default';
+    if (keyId === 'rzp_test_default') {
+      alert('Razorpay Key ID is not configured. Please set the RAZORPAY_KEY_ID environment variable on Render.');
+    }
+
+    const options = {
+      key: keyId,
+      amount: selectedPlan.price * 100, // in paise
+      currency: 'INR',
+      name: 'Nokri.online',
+      description: `Premium Upgrade - ${selectedPlan.name}`,
+      image: '/logo.png',
+      handler: function (response: any) {
+        if (response.razorpay_payment_id) {
+          handleUpgradeSuccess();
+        }
+      },
+      prefill: {
+        name: 'Guest Subscriber',
+        email: 'subscriber@nokri.online',
+        contact: '9999999999'
+      },
+      theme: {
+        color: '#1e3a8a'
+      }
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
   };
 
   // Fetch posts and increment global site views count
@@ -51,6 +98,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
         setTotalViews(data.totalViews || 0);
         if (data.adsEnabled !== undefined) {
           localStorage.setItem('global_ads_enabled', data.adsEnabled.toString());
+        }
+        if (data.razorpayKeyId) {
+          localStorage.setItem('razorpay_key_id', data.razorpayKeyId);
         }
       })
       .catch(err => console.error('Failed to log site view', err));
@@ -550,47 +600,33 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 </div>
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-600 uppercase">Payment Option</label>
-                    <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                      <div className="border-2 border-blue-900 bg-blue-50/20 rounded-lg p-2.5 font-bold text-blue-900">
-                        UPI (PhonePe, GPay, Paytm)
-                      </div>
-                      <div className="border border-slate-200 rounded-lg p-2.5 text-slate-400 font-semibold cursor-not-allowed">
-                        Credit / Debit Card
-                      </div>
-                    </div>
+                  <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50 space-y-2">
+                    <h5 className="font-bold text-xs text-blue-900 flex items-center gap-1">
+                      <span>💳 Payment Gateway: Razorpay</span>
+                    </h5>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Click the payment button below to open the secure Razorpay Gateway. You can complete the transaction using UPI, Cards, NetBanking, or Wallet.
+                    </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-600 uppercase">Enter UPI ID</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. user@ybl, user@paytm" 
-                      value={upiId}
-                      onChange={(e) => setUpiId(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900 text-sm"
-                    />
-                  </div>
+                  <button
+                    onClick={handlePayWithRazorpay}
+                    className="w-full bg-blue-900 hover:bg-blue-950 text-white font-extrabold py-3.5 rounded-xl shadow-lg transition-all hover:scale-102 flex justify-center items-center gap-1.5 cursor-pointer text-sm"
+                  >
+                    Pay with Razorpay 💳
+                  </button>
 
-                  <div className="bg-slate-50 p-3 rounded-xl text-[10px] text-slate-500 border border-slate-100 flex items-center gap-2">
-                    <span>🔒 SECURE END-TO-END ENCRYPTED GATEWAY</span>
+                  <div className="bg-slate-50 p-3 rounded-xl text-[10px] text-slate-500 border border-slate-100 text-center font-bold">
+                    🔒 SECURE SSL ENCRYPTED GATEWAY BY RAZORPAY
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="pt-2">
                   <button 
                     onClick={() => setCheckoutStep('plans')}
-                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all cursor-pointer text-xs"
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition-all cursor-pointer text-xs"
                   >
-                    Back
-                  </button>
-                  <button 
-                    onClick={handleUpgradeSuccess}
-                    disabled={!upiId.trim()}
-                    className={`flex-1 text-white font-bold py-3 rounded-xl shadow-lg transition-all text-xs flex justify-center items-center gap-1 cursor-pointer ${upiId.trim() ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-300 cursor-not-allowed'}`}
-                  >
-                    Verify & Pay Now
+                    Change Plan / Back
                   </button>
                 </div>
               </div>

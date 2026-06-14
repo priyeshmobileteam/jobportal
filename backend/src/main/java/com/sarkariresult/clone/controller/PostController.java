@@ -52,6 +52,7 @@ public class PostController {
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalViews", totalHits);
         stats.put("adsEnabled", siteViewsService.getAdsEnabled());
+        stats.put("razorpayKeyId", System.getenv().getOrDefault("RAZORPAY_KEY_ID", "rzp_test_default"));
         return ResponseEntity.ok(stats);
     }
 
@@ -62,6 +63,7 @@ public class PostController {
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalViews", totalHits);
         stats.put("adsEnabled", siteViewsService.getAdsEnabled());
+        stats.put("razorpayKeyId", System.getenv().getOrDefault("RAZORPAY_KEY_ID", "rzp_test_default"));
         return ResponseEntity.ok(stats);
     }
 }
