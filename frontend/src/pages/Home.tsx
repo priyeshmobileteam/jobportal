@@ -84,11 +84,11 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
           <div className="text-center md:text-left cursor-pointer flex items-center gap-3" onClick={() => window.location.reload()}>
             <img 
               src="/logo.png" 
-              alt="Nokri.in Logo" 
+              alt="Nokri.online Logo" 
               className="h-16 w-16 rounded-full object-cover shadow-md border-2 border-red-500 bg-black" 
             />
             <div className="hidden sm:block">
-              <span className="text-2xl font-black tracking-widest text-white block drop-shadow-sm">NOKRI.IN</span>
+              <span className="text-2xl font-black tracking-widest text-white block drop-shadow-sm">NOKRI.ONLINE</span>
               <span className="text-[10px] tracking-widest text-red-100 font-bold uppercase block -mt-1 font-mono">Find Your Career</span>
             </div>
           </div>
@@ -145,7 +145,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 </span>
               ))
             ) : (
-              <span>Welcome to Nokri.in. Loading real-time vacancy updates...</span>
+              <span>Welcome to Nokri.online. Loading real-time vacancy updates...</span>
             )}
           </div>
         </div>
@@ -169,7 +169,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
 
           <div className="text-center my-4">
             <h2 className="text-base md:text-lg font-bold text-blue-900 border-y border-dashed border-slate-300 py-2 bg-blue-50/50">
-              Nokri.in ™ – Get Online Form, Results, Admit Card, Answer Key, Syllabus
+              Nokri.online ™ – Get Online Form, Results, Admit Card, Answer Key, Syllabus
             </h2>
           </div>
 
@@ -396,7 +396,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 <td className="p-2 border border-slate-800">Useful Links</td>
               </tr>
               <tr>
-                <td className="p-2 border border-slate-800 text-blue-400 hover:underline cursor-pointer">Nokri.in Home</td>
+                <td className="p-2 border border-slate-800 text-blue-400 hover:underline cursor-pointer">Nokri.online Home</td>
                 <td className="p-2 border border-slate-800 text-blue-400 hover:underline cursor-pointer">Sarkari Naukri Hindi</td>
               </tr>
               <tr>
@@ -405,7 +405,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
               </tr>
             </tbody>
           </table>
-          <p>© 2026 Nokri.in. All Rights Reserved.</p>
+          <p>© 2026 Nokri.online. All Rights Reserved.</p>
           <p className="text-slate-500 mt-1">Designated trademarks and brands are the property of their respective owners.</p>
         </div>
       </footer>

@@ -172,10 +172,10 @@ export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
           <div className="cursor-pointer flex items-center gap-2" onClick={onBack}>
             <img 
               src="/logo.png" 
-              alt="Nokri.in Logo" 
+              alt="Nokri.online Logo" 
               className="h-12 w-12 rounded-full object-cover bg-black" 
             />
-            <span className="text-xl font-black text-white tracking-widest hidden sm:inline">NOKRI.IN</span>
+            <span className="text-xl font-black text-white tracking-widest hidden sm:inline">NOKRI.ONLINE</span>
           </div>
           <button 
             onClick={onBack}

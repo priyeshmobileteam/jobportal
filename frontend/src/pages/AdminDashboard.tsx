@@ -290,7 +290,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         <div className="max-w-6xl mx-auto px-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <span className="bg-red-600 text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded">ADMIN PANEL</span>
-            <h1 className="text-xl font-bold tracking-tight">Nokri.in Control Center</h1>
+            <h1 className="text-xl font-bold tracking-tight">Nokri.online Control Center</h1>
           </div>
           <div className="flex gap-2">
             <button 
@@ -476,7 +476,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             <div>
               <h3 className="font-extrabold text-blue-900 text-sm flex items-center gap-2">
                 <RefreshCw size={16} className="animate-spin-slow" />
-                <span>Nokri.in Automatic Parser Tool</span>
+                <span>Nokri.online Automatic Parser Tool</span>
               </h3>
               <p className="text-xs text-slate-600 mt-1">
                 Trigger Jsoup scraper execution to scan and fetch new notifications.
