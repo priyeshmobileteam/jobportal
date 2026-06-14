@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+  }
+}
+
+/* Glassmorphism panel headers */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+/* Custom marquee styling for announcement ticker */
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 60s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* ==========================================================================
+   Scraped Vacancy Tables Styling (Restore original table layout & colors)
+   ========================================================================== */
+.sarkari-scraped-table table {
+  display: table !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  margin: 16px 0 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  font-family: Arial, sans-serif !important;
+}
+
+.sarkari-scraped-table tr {
+  display: table-row !important;
+}
+
+.sarkari-scraped-table td, 
+.sarkari-scraped-table th {
+  display: table-cell !important;
+  padding: 12px 16px !important;
+  border: 1px solid #cbd5e1 !important;
+  text-align: left !important;
+  vertical-align: top !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.sarkari-scraped-table th {
+  background-color: #f1f5f9 !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+}
+
+.sarkari-scraped-table td {
+  color: #334155 !important;
+}
+
+/* Alternate row shading for better scanning */
+.sarkari-scraped-table tr:nth-child(even) {
+  background-color: #f8fafc !important;
+}
+
+/* Style links within scraped tables */
+.sarkari-scraped-table a {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  font-weight: 600 !important;
+}
+
+.sarkari-scraped-table a:hover {
+  color: #1d4ed8 !important;
+}
+
+/* Standardize colors used in original SarkariResult cells */
+.sarkari-scraped-table font[color="red"],
+.sarkari-scraped-table span[style*="color:red"],
+.sarkari-scraped-table span[style*="color: #ff0000"] {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+
+.sarkari-scraped-table font[color="green"],
+.sarkari-scraped-table span[style*="color:green"],
+.sarkari-scraped-table span[style*="color: #008000"] {
+  color: #16a34a !important;
+  font-weight: 600 !important;
+}
+
+.sarkari-scraped-table font[color="blue"],
+.sarkari-scraped-table span[style*="color:blue"] {
+  color: #2563eb !important;
+}
+
