@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft, CreditCard, Users } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.port === '5173' ? 'http://localhost:8085' : '');
+  (window.location.port === '5173' ? 'http://localhost:8085' : 'https://careersphere-api.onrender.com');
 
 interface Post {
   id: number;

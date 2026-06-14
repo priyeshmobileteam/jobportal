@@ -18,7 +18,7 @@ interface HomeProps {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.port === '5173' ? 'http://localhost:8085' : '');
+  (window.location.port === '5173' ? 'http://localhost:8085' : 'https://careersphere-api.onrender.com');
 
 export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) => {
   const [groupedPosts, setGroupedPosts] = useState<Record<string, Post[]>>({});
