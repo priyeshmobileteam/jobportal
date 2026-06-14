@@ -128,7 +128,77 @@ public class AuthService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .roles(roles)
+                .isPremium(user.getIsPremium())
                 .build();
+    }
+
+    @Transactional
+    public AuthResponse authenticateGoogleUser(String idToken) {
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+        String url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
+        
+        try {
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            if (response == null || response.containsKey("error_description")) {
+                throw new RuntimeException("Invalid Google ID Token");
+            }
+            
+            String email = (String) response.get("email");
+            String firstName = (String) response.get("given_name");
+            String lastName = (String) response.get("family_name");
+            final String finalLastName = (lastName == null) ? "" : lastName;
+            
+            User user = userRepository.findByEmail(email).orElseGet(() -> {
+                Role userRole = roleRepository.findByName("ROLE_JOBSEEKER")
+                        .orElseThrow(() -> new RuntimeException("Default ROLE_JOBSEEKER not found"));
+                        
+                User newUser = User.builder()
+                        .email(email)
+                        .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                        .firstName(firstName != null ? firstName : "Google")
+                        .lastName(finalLastName)
+                        .isEnabled(true)
+                        .isLocked(false)
+                        .failedLoginAttempts(0)
+                        .roles(Set.of(userRole))
+                        .isPremium(false)
+                        .build();
+                        
+                newUser = userRepository.save(newUser);
+                
+                CandidateProfile candidateProfile = CandidateProfile.builder()
+                        .user(newUser)
+                        .headline("Job Seeker (Google)")
+                        .build();
+                candidateProfileRepository.save(candidateProfile);
+                
+                return newUser;
+            });
+            
+            String jwt = jwtUtils.generateToken(
+                    new org.springframework.security.core.userdetails.User(
+                            user.getEmail(), user.getPasswordHash(), new ArrayList<>()
+                    )
+            );
+            
+            List<String> roles = user.getRoles().stream()
+                    .map(Role::getName)
+                    .collect(Collectors.toList());
+                    
+            return AuthResponse.builder()
+                    .token(jwt)
+                    .refreshToken(UUID.randomUUID().toString())
+                    .id(user.getId())
+                    .email(user.getEmail())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .roles(roles)
+                    .isPremium(user.getIsPremium())
+                    .build();
+                    
+        } catch (Exception e) {
+            throw new RuntimeException("Google Authentication failed: " + e.getMessage());
+        }
     }
 
     public String sendOtp(String email, String purpose) {

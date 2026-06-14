@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../../redux/authSlice';
 import api from '../../services/api';
 import { Mail, Lock, CheckCircle2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 interface LoginProps {
   setView: (view: string) => void;
@@ -22,6 +28,48 @@ export const Login: React.FC<LoginProps> = ({ setView }) => {
   const [captchaNum1] = useState(Math.floor(Math.random() * 9) + 1);
   const [captchaNum2] = useState(Math.floor(Math.random() * 9) + 1);
   const expectedAnswer = (captchaNum1 + captchaNum2).toString();
+  
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: '872126281854-00bnv4v6q483r8j4419qmr87mtb8c08.apps.googleusercontent.com',
+          callback: handleGoogleResponse,
+        });
+
+        window.google.accounts.id.renderButton(
+          document.getElementById('google-signin-btn'),
+          { theme: 'outline', size: 'large', width: '380' }
+        );
+      }
+    };
+    
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const handleGoogleResponse = async (response: any) => {
+    setError('');
+    setSuccess('');
+    try {
+      const idToken = response.credential;
+      const res = await api.post('/auth/google-login', { idToken });
+      dispatch(setCredentials(res.data));
+      setSuccess('Google Login successful! Redirecting...');
+      setTimeout(() => {
+        setView('dashboard');
+      }, 1000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Google Authentication failed.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,20 +220,15 @@ export const Login: React.FC<LoginProps> = ({ setView }) => {
         <div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-slate-900 px-3 text-slate-400">Or continue with</span></div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          type="button"
-          onClick={() => alert('Social Login Integrations: Configured in production via GCP Google Client Client ID.')}
-          className="flex items-center justify-center gap-2 py-3 border border-slate-200/20 dark:border-slate-800/40 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition text-sm"
-        >
-          <span>Google</span>
-        </button>
+      <div className="flex flex-col items-center gap-4">
+        <div id="google-signin-btn" className="w-full flex justify-center"></div>
+        
         <button
           type="button"
           onClick={() => alert('Social Login Integrations: Configured in production via LinkedIn Dev Apps.')}
-          className="flex items-center justify-center gap-2 py-3 border border-slate-200/20 dark:border-slate-800/40 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 text-sky-600 font-bold transition text-sm"
+          className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200/20 dark:border-slate-800/40 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 text-sky-600 font-bold transition text-sm"
         >
-          <span>LinkedIn</span>
+          <span>Continue with LinkedIn</span>
         </button>
       </div>
 
