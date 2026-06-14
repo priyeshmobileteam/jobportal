@@ -72,7 +72,7 @@ public class AuthController {
     }
 
     @PostMapping("/upgrade")
-    public ResponseEntity<?> upgradeToPremium() {
+    public ResponseEntity<?> upgradeToPremium(@RequestBody UpgradeRequest upgradeRequest) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             Map<String, String> response = new HashMap<>();
@@ -81,7 +81,7 @@ public class AuthController {
         }
         String username = auth.getName();
         try {
-            com.sarkariresult.clone.model.User upgraded = userService.upgradeUserToPremium(username);
+            com.sarkariresult.clone.model.User upgraded = userService.upgradeUserToPremium(username, upgradeRequest);
             Map<String, String> response = new HashMap<>();
             response.put("message", "User upgraded to PREMIUM successfully");
             response.put("username", username);
@@ -129,5 +129,18 @@ public class AuthController {
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+    }
+
+    public static class UpgradeRequest {
+        private Double amount;
+        private String planName;
+        private String razorpayPaymentId;
+
+        public Double getAmount() { return amount; }
+        public void setAmount(Double amount) { this.amount = amount; }
+        public String getPlanName() { return planName; }
+        public void setPlanName(String planName) { this.planName = planName; }
+        public String getRazorpayPaymentId() { return razorpayPaymentId; }
+        public void setRazorpayPaymentId(String razorpayPaymentId) { this.razorpayPaymentId = razorpayPaymentId; }
     }
 }

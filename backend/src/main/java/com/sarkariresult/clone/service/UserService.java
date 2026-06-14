@@ -16,6 +16,9 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private com.sarkariresult.clone.repository.PaymentTransactionRepository paymentTransactionRepository;
+
     public User createAdmin(String username, String password) {
         User user = new User();
         user.setUsername(username);
@@ -35,11 +38,22 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User upgradeUserToPremium(String username) {
+    public User upgradeUserToPremium(String username, com.sarkariresult.clone.controller.AuthController.UpgradeRequest upgradeRequest) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setRole("PREMIUM");
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // Record the transaction details
+        com.sarkariresult.clone.model.PaymentTransaction transaction = new com.sarkariresult.clone.model.PaymentTransaction();
+        transaction.setUsername(username);
+        transaction.setAmount(upgradeRequest.getAmount() != null ? upgradeRequest.getAmount() : 99.0);
+        transaction.setPlanName(upgradeRequest.getPlanName() != null ? upgradeRequest.getPlanName() : "Premium Upgrade");
+        transaction.setPaymentDate(java.time.LocalDateTime.now());
+        transaction.setRazorpayPaymentId(upgradeRequest.getRazorpayPaymentId());
+        paymentTransactionRepository.save(transaction);
+
+        return savedUser;
     }
 
     public Optional<User> findByUsername(String username) {

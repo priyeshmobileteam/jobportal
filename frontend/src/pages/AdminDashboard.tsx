@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft } from 'lucide-react';
+import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft, CreditCard } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (window.location.port === '5173' ? 'http://localhost:8085' : '');
@@ -36,6 +36,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+
+  const [activeTab, setActiveTab] = useState<'listings' | 'payments'>('listings');
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,6 +77,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         .catch(err => console.error('Failed to fetch stats', err));
     }
   }, [token]);
+
+  useEffect(() => {
+    if (token && activeTab === 'payments') {
+      fetchPayments();
+    }
+  }, [token, activeTab]);
+
+  const fetchPayments = () => {
+    setLoadingPayments(true);
+    fetch(`${API_BASE_URL}/api/admin/payments`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        if (res.status === 401 || res.status === 403) {
+          handleLogout();
+          throw new Error('Unauthorized');
+        }
+        return res.json();
+      })
+      .then(data => {
+        setPayments(data);
+        setLoadingPayments(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoadingPayments(false);
+      });
+  };
 
   const toggleAdsEnabled = () => {
     const nextStatus = !adsEnabled;
@@ -553,161 +587,246 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Traffic Reports / Post Hits Table */}
-          <div className="bg-white border border-slate-200 rounded-lg shadow overflow-hidden">
-            <div className="bg-slate-800 text-white font-bold py-3 px-4 text-sm flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <BarChart3 size={16} />
-                <span>Active Listings & Post Traffic Statistics</span>
-              </div>
-              <span className="bg-slate-700 text-[10px] py-0.5 px-2 rounded">{posts.length} Total</span>
-            </div>
+          {/* Tab Navigation */}
+          <div className="flex bg-slate-200 p-1.5 rounded-lg border border-slate-300 gap-1 my-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('listings')}
+              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${activeTab === 'listings' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <BarChart3 size={14} /> Listings & Traffic
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('payments')}
+              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${activeTab === 'payments' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <CreditCard size={14} /> Payment Logs (Done Details)
+            </button>
+          </div>
 
-            <div className="overflow-x-auto">
-              {loading ? (
-                <div className="p-12 text-center text-slate-500 text-xs">Reloading post lists...</div>
-              ) : (
-                <>
+          {/* Traffic Reports / Post Hits Table */}
+          {activeTab === 'listings' && (
+            <div className="bg-white border border-slate-200 rounded-lg shadow overflow-hidden">
+              <div className="bg-slate-800 text-white font-bold py-3 px-4 text-sm flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <BarChart3 size={16} />
+                  <span>Active Listings & Post Traffic Statistics</span>
+                </div>
+                <span className="bg-slate-700 text-[10px] py-0.5 px-2 rounded">{posts.length} Total</span>
+              </div>
+
+              <div className="overflow-x-auto">
+                {loading ? (
+                  <div className="p-12 text-center text-slate-500 text-xs">Reloading post lists...</div>
+                ) : (
+                  <>
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold">
+                          <th className="p-3">Title / Vacancy Name</th>
+                          <th className="p-3">Category</th>
+                          <th className="p-3 text-center">Hits (Views)</th>
+                          <th className="p-3 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {posts.length > 0 ? (
+                          (() => {
+                            const totalItems = posts.length;
+                            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+                            const activePage = Math.min(currentPage, totalPages);
+                            const startIndex = (activePage - 1) * itemsPerPage;
+                            const paginatedPosts = posts.slice(startIndex, startIndex + itemsPerPage);
+
+                            return paginatedPosts.map(post => (
+                              <tr key={post.id} className="hover:bg-slate-50">
+                                <td className="p-3 font-semibold text-slate-800 max-w-[200px] truncate" title={post.title}>
+                                  {post.title}
+                                </td>
+                                <td className="p-3">
+                                  <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px]">
+                                    {post.category}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-center font-bold font-mono text-blue-900">
+                                  {post.views.toLocaleString()}
+                                </td>
+                                <td className="p-3">
+                                  <div className="flex gap-2 justify-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => startEdit(post)}
+                                      className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-1.5 rounded transition-colors cursor-pointer"
+                                      title="Edit"
+                                    >
+                                      <Edit size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDelete(post.id)}
+                                      className="bg-red-50 hover:bg-red-100 text-red-700 p-1.5 rounded transition-colors cursor-pointer"
+                                      title="Delete"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ));
+                          })()
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="p-6 text-center text-slate-400">No vacancies saved in database. Run scraper above to populate.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+
+                    {/* Pagination Controls */}
+                    {posts.length > 0 && (() => {
+                      const totalItems = posts.length;
+                      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+                      const activePage = Math.min(currentPage, totalPages);
+                      const startIndex = (activePage - 1) * itemsPerPage;
+
+                      return (
+                        <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <span>Show</span>
+                            <select 
+                              value={itemsPerPage} 
+                              onChange={(e) => {
+                                setItemsPerPage(Number(e.target.value));
+                                setCurrentPage(1);
+                              }}
+                              className="border border-slate-300 rounded px-1.5 py-1 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                            >
+                              <option value={10}>10 rows</option>
+                              <option value={25}>25 rows</option>
+                              <option value={50}>50 rows</option>
+                              <option value={100}>100 rows</option>
+                            </select>
+                            <span>
+                              Showing <strong>{startIndex + 1}</strong> to <strong>{Math.min(startIndex + itemsPerPage, totalItems)}</strong> of <strong>{totalItems}</strong> entries
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={activePage === 1}
+                              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                              className="px-2.5 py-1.5 border border-slate-300 rounded bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors cursor-pointer"
+                            >
+                              Prev
+                            </button>
+                            
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                              let pageNum = 1;
+                              if (totalPages <= 5) {
+                                pageNum = i + 1;
+                              } else if (activePage <= 3) {
+                                pageNum = i + 1;
+                              } else if (activePage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i;
+                              } else {
+                                pageNum = activePage - 2 + i;
+                              }
+                              
+                              return (
+                                <button
+                                  type="button"
+                                  key={pageNum}
+                                  onClick={() => setCurrentPage(pageNum)}
+                                  className={`px-3 py-1.5 rounded font-semibold cursor-pointer border transition-colors ${
+                                    activePage === pageNum 
+                                      ? 'bg-blue-900 border-blue-900 text-white' 
+                                      : 'bg-white border-slate-300 hover:bg-slate-50 text-slate-700'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+                            
+                            <button
+                              type="button"
+                              disabled={activePage === totalPages}
+                              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                              className="px-2.5 py-1.5 border border-slate-300 rounded bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors cursor-pointer"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Payments Detail Log Tab */}
+          {activeTab === 'payments' && (
+            <div className="bg-white border border-slate-200 rounded-lg shadow overflow-hidden text-left">
+              <div className="bg-slate-800 text-white font-bold py-3 px-4 text-sm flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <CreditCard size={16} />
+                  <span>Successful Premium Upgrades (Done Details)</span>
+                </div>
+                <span className="bg-emerald-700 text-[10px] py-0.5 px-2 rounded font-bold font-mono">
+                  ₹{payments.reduce((acc, curr) => acc + (curr.amount || 0), 0)} Earned
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                {loadingPayments ? (
+                  <div className="p-12 text-center text-slate-500 text-xs">Loading transaction records...</div>
+                ) : (
                   <table className="w-full text-xs text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold">
-                        <th className="p-3">Title / Vacancy Name</th>
-                        <th className="p-3">Category</th>
-                        <th className="p-3 text-center">Hits (Views)</th>
-                        <th className="p-3 text-center">Actions</th>
+                        <th className="p-3">Username</th>
+                        <th className="p-3">Plan Name</th>
+                        <th className="p-3 text-center">Amount Paid</th>
+                        <th className="p-3 text-center">Date & Time</th>
+                        <th className="p-3 text-center">Razorpay Payment ID</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {posts.length > 0 ? (
-                        (() => {
-                          const totalItems = posts.length;
-                          const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-                          const activePage = Math.min(currentPage, totalPages);
-                          const startIndex = (activePage - 1) * itemsPerPage;
-                          const paginatedPosts = posts.slice(startIndex, startIndex + itemsPerPage);
-
-                          return paginatedPosts.map(post => (
-                            <tr key={post.id} className="hover:bg-slate-50">
-                              <td className="p-3 font-semibold text-slate-800 max-w-[200px] truncate" title={post.title}>
-                                {post.title}
-                              </td>
-                              <td className="p-3">
-                                <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px]">
-                                  {post.category}
-                                </span>
-                              </td>
-                              <td className="p-3 text-center font-bold font-mono text-blue-900">
-                                {post.views.toLocaleString()}
-                              </td>
-                              <td className="p-3">
-                                <div className="flex gap-2 justify-center">
-                                  <button
-                                    onClick={() => startEdit(post)}
-                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-1.5 rounded transition-colors cursor-pointer"
-                                    title="Edit"
-                                  >
-                                    <Edit size={13} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(post.id)}
-                                    className="bg-red-50 hover:bg-red-100 text-red-700 p-1.5 rounded transition-colors cursor-pointer"
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ));
-                        })()
+                      {payments.length > 0 ? (
+                        payments.map(pay => (
+                          <tr key={pay.id} className="hover:bg-slate-50">
+                            <td className="p-3 font-semibold text-slate-800 font-mono">
+                              {pay.username}
+                            </td>
+                            <td className="p-3 text-slate-600 font-semibold">
+                              {pay.planName}
+                            </td>
+                            <td className="p-3 text-center font-bold text-emerald-700 font-mono">
+                              ₹{pay.amount}
+                            </td>
+                            <td className="p-3 text-center text-slate-500 font-mono">
+                              {new Date(pay.paymentDate).toLocaleString('en-IN')}
+                            </td>
+                            <td className="p-3 text-center font-bold font-mono text-blue-900 bg-blue-50/50">
+                              {pay.razorpayPaymentId}
+                            </td>
+                          </tr>
+                        ))
                       ) : (
                         <tr>
-                          <td colSpan={4} className="p-6 text-center text-slate-400">No vacancies saved in database. Run scraper above to populate.</td>
+                          <td colSpan={5} className="p-8 text-center text-slate-400">No premium subscription purchases logged.</td>
                         </tr>
                       )}
                     </tbody>
                   </table>
-
-                  {/* Pagination Controls */}
-                  {posts.length > 0 && (() => {
-                    const totalItems = posts.length;
-                    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-                    const activePage = Math.min(currentPage, totalPages);
-                    const startIndex = (activePage - 1) * itemsPerPage;
-
-                    return (
-                      <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <span>Show</span>
-                          <select 
-                            value={itemsPerPage} 
-                            onChange={(e) => {
-                              setItemsPerPage(Number(e.target.value));
-                              setCurrentPage(1);
-                            }}
-                            className="border border-slate-300 rounded px-1.5 py-1 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
-                          >
-                            <option value={10}>10 rows</option>
-                            <option value={25}>25 rows</option>
-                            <option value={50}>50 rows</option>
-                            <option value={100}>100 rows</option>
-                          </select>
-                          <span>
-                            Showing <strong>{startIndex + 1}</strong> to <strong>{Math.min(startIndex + itemsPerPage, totalItems)}</strong> of <strong>{totalItems}</strong> entries
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <button
-                            disabled={activePage === 1}
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            className="px-2.5 py-1.5 border border-slate-300 rounded bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors cursor-pointer"
-                          >
-                            Prev
-                          </button>
-                          
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum = 1;
-                            if (totalPages <= 5) {
-                              pageNum = i + 1;
-                            } else if (activePage <= 3) {
-                              pageNum = i + 1;
-                            } else if (activePage >= totalPages - 2) {
-                              pageNum = totalPages - 4 + i;
-                            } else {
-                              pageNum = activePage - 2 + i;
-                            }
-                            
-                            return (
-                              <button
-                                key={pageNum}
-                                onClick={() => setCurrentPage(pageNum)}
-                                className={`px-3 py-1.5 rounded font-semibold cursor-pointer border transition-colors ${
-                                  activePage === pageNum 
-                                    ? 'bg-blue-900 border-blue-900 text-white' 
-                                    : 'bg-white border-slate-300 hover:bg-slate-50 text-slate-700'
-                                }`}
-                              >
-                                {pageNum}
-                              </button>
-                            );
-                          })}
-                          
-                          <button
-                            disabled={activePage === totalPages}
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            className="px-2.5 py-1.5 border border-slate-300 rounded bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors cursor-pointer"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
       </div>

@@ -56,13 +56,19 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
     window.dispatchEvent(new Event('storage'));
   };
 
-  const handleUpgradeSuccess = () => {
-    // Send API call to upgrade the user role in the PostgreSQL database
+  const handleUpgradeSuccess = (paymentId?: string) => {
+    // Send API call to upgrade the user role in the PostgreSQL database and log the transaction
     fetch(`${API_BASE_URL}/api/auth/upgrade`, {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
-      }
+      },
+      body: JSON.stringify({
+        amount: selectedPlan.price,
+        planName: selectedPlan.name,
+        razorpayPaymentId: paymentId || 'offline_test'
+      })
     })
       .then(res => {
         if (!res.ok) throw new Error('Payment was successful, but role upgrade failed. Please contact support.');
@@ -119,7 +125,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
       image: '/logo.png',
       handler: function (response: any) {
         if (response.razorpay_payment_id) {
-          handleUpgradeSuccess();
+          handleUpgradeSuccess(response.razorpay_payment_id);
         }
       },
       prefill: {
@@ -671,7 +677,17 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 </div>
 
                 <button 
-                  onClick={() => setCheckoutStep('payment')}
+                  onClick={() => {
+                    if (!userToken) {
+                      alert('Please Sign In or Register an account first to link the premium subscription to your profile.');
+                      setIsCheckoutOpen(false);
+                      setAuthMode('login');
+                      setAuthError('');
+                      setIsAuthModalOpen(true);
+                    } else {
+                      setCheckoutStep('payment');
+                    }
+                  }}
                   className="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-3 rounded-xl shadow-lg transition-all hover:scale-102 flex justify-center items-center gap-1 cursor-pointer text-sm"
                 >
                   Proceed to Checkout (₹{selectedPlan.price})
