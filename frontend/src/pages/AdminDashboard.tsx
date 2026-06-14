@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8085';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.port === '5173' ? 'http://localhost:8085' : '');
 
 interface Post {
   id: number;

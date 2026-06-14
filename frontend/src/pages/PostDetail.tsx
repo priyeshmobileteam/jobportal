@@ -26,7 +26,8 @@ interface Post {
   views: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8085';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.port === '5173' ? 'http://localhost:8085' : '');
 
 export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
   const [post, setPost] = useState<Post | null>(null);

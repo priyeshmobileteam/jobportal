@@ -17,7 +17,8 @@ interface HomeProps {
   onNavigateToAdmin: () => void;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8085';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.port === '5173' ? 'http://localhost:8085' : '');
 
 export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) => {
   const [groupedPosts, setGroupedPosts] = useState<Record<string, Post[]>>({});
