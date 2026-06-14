@@ -91,8 +91,9 @@ public class JobSyncScheduler {
                     String text = item.text().trim();
                     if (text.isEmpty() || text.length() < 5) continue;
 
-                    if (!postRepository.existsByTitle(text)) {
-                        boolean success = parseAndSaveDetailPage(href, text, category);
+                    String cleanedTitle = cleanBranding(text);
+                    if (!postRepository.existsByTitle(cleanedTitle)) {
+                        boolean success = parseAndSaveDetailPage(href, cleanedTitle, category);
                         if (success) {
                             count++;
                             // Short delay between crawls to prevent rate-limiting
@@ -124,7 +125,7 @@ public class JobSyncScheduler {
                     .get();
 
             Post post = new Post();
-            post.setTitle(title);
+            post.setTitle(cleanBranding(title));
             post.setCategory(category);
             post.setPostDate(LocalDateTime.now());
             post.setLastUpdateDate(LocalDateTime.now());
@@ -133,9 +134,9 @@ public class JobSyncScheduler {
             // Extract Short Info
             Element shortInfoEl = detailDoc.select("td:contains(Short Information)").first();
             if (shortInfoEl != null) {
-                post.setShortInfo(shortInfoEl.text().replace("Short Information :", "").trim());
+                post.setShortInfo(cleanBranding(shortInfoEl.text().replace("Short Information :", "").trim()));
             } else {
-                post.setShortInfo("Details of vacancy notification for " + title + ". Please read details below.");
+                post.setShortInfo(cleanBranding("Details of vacancy notification for " + title + ". Please read details below."));
             }
 
             // Parse Dates, Fees, Age Limits, Vacancies, and Links
@@ -153,17 +154,18 @@ public class JobSyncScheduler {
                 if (rowText.contains("important dates") || rowText.contains("application fee")) {
                     Elements cells = row.select("td");
                     for (Element cell : cells) {
-                        String cellText = cell.text();
+                        String cellText = getElementTextWithNewlines(cell);
                         if (cellText.contains("Application Begin") || cellText.contains("Last Date")) {
                             // Try to parse dates or extract text
                             String[] lines = cellText.split("\n");
                             for (String line : lines) {
+                                line = line.trim();
                                 if (line.contains("Application Begin") && line.contains(":")) {
-                                    String dateStr = line.split(":")[1].trim();
+                                    String dateStr = line.split(":", 2)[1].trim();
                                     post.setApplicationStartDate(tryParseDate(dateStr));
                                 }
-                                if (line.contains("Last Date") && line.contains(":")) {
-                                    String dateStr = line.split(":")[1].trim();
+                                if (line.contains("Last Date") && line.contains("Apply") && line.contains(":")) {
+                                    String dateStr = line.split(":", 2)[1].trim();
                                     post.setApplicationEndDate(tryParseDate(dateStr));
                                 }
                             }
@@ -171,9 +173,12 @@ public class JobSyncScheduler {
                         if (cellText.contains("General") || cellText.contains("SC / ST") || cellText.contains("OBC")) {
                             String[] lines = cellText.split("\n");
                             for (String line : lines) {
+                                line = line.trim();
                                 if (line.contains(":")) {
-                                    String[] parts = line.split(":");
-                                    fees.put(parts[0].trim(), parts[1].trim());
+                                    String[] parts = line.split(":", 2);
+                                    if (parts[0].trim().length() > 0 && parts[1].trim().length() > 0) {
+                                        fees.put(parts[0].trim(), parts[1].trim());
+                                    }
                                 }
                             }
                         }
@@ -184,16 +189,21 @@ public class JobSyncScheduler {
                 if (rowText.contains("age limit")) {
                     Elements cells = row.select("td");
                     for (Element cell : cells) {
-                        String cellText = cell.text();
-                        if (cellText.contains("Minimum") || cellText.contains("Maximum")) {
+                        String cellText = getElementTextWithNewlines(cell);
+                        if (cellText.contains("Minimum") || cellText.contains("Maximum") || cellText.contains("Min") || cellText.contains("Max")) {
                             String[] lines = cellText.split("\n");
                             for (String line : lines) {
-                                if (line.contains("Min") || line.contains("Max") || line.contains("Age")) {
+                                line = line.trim();
+                                if (line.contains("Min") || line.contains("Max") || line.contains("Age") || line.contains("Minimum") || line.contains("Maximum")) {
                                     if (line.contains(":")) {
-                                        String[] parts = line.split(":");
-                                        age.put(parts[0].trim(), parts[1].trim());
+                                        String[] parts = line.split(":", 2);
+                                        if (parts[0].trim().length() > 0 && parts[1].trim().length() > 0) {
+                                            age.put(parts[0].trim(), parts[1].trim());
+                                        }
                                     } else {
-                                        age.put("Details", line.trim());
+                                        if (line.length() > 3 && !line.toLowerCase().contains("age limit as on")) {
+                                            age.put("Details", line.trim());
+                                        }
                                     }
                                 }
                             }
@@ -254,14 +264,14 @@ public class JobSyncScheduler {
                         tl.removeAttr("target");
                     }
                 }
-                post.setVacancyDetails(vacTable.outerHtml());
+                post.setVacancyDetails(cleanBranding(vacTable.outerHtml()));
             } else {
-                post.setVacancyDetails("<p>Refer to official notification details for vacancy breakdown.</p>");
+                post.setVacancyDetails(cleanBranding("<p>Refer to official notification details for vacancy breakdown.</p>"));
             }
 
             // Serialize maps to custom JSON-like string format
-            post.setFeeDetails(serializeMap(fees));
-            post.setAgeLimits(serializeMap(age));
+            post.setFeeDetails(cleanBranding(serializeMap(fees)));
+            post.setAgeLimits(cleanBranding(serializeMap(age)));
 
             // Extract Direct Links from the links table
             // Usually has "Apply Online", "Download Notification", "Official Website"
@@ -304,17 +314,60 @@ public class JobSyncScheduler {
         return false;
     }
 
-    private LocalDate tryParseDate(String dateStr) {
-        try {
-            // SarkariResult dates are often like "01/06/2026" or "10-07-2026"
-            String cleanDate = dateStr.replaceAll("[^0-9/-]", "").trim();
-            if (cleanDate.contains("/")) {
-                return LocalDate.parse(cleanDate, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            } else if (cleanDate.contains("-")) {
-                return LocalDate.parse(cleanDate, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+    private String getElementTextWithNewlines(Element element) {
+        if (element == null) return "";
+        StringBuilder sb = new StringBuilder();
+        buildTextWithNewlines(element, sb);
+        return sb.toString();
+    }
+
+    private void buildTextWithNewlines(org.jsoup.nodes.Node node, StringBuilder sb) {
+        if (node instanceof org.jsoup.nodes.TextNode) {
+            sb.append(((org.jsoup.nodes.TextNode) node).text());
+        } else if (node instanceof Element) {
+            Element el = (Element) node;
+            String tagName = el.tagName().toLowerCase();
+            boolean isBlock = tagName.equals("br") || tagName.equals("li") || tagName.equals("p") || tagName.equals("div") || tagName.equals("tr") || tagName.equals("td");
+            
+            if (isBlock && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
+                sb.append("\n");
             }
-        } catch (Exception ignored) {}
+            
+            for (org.jsoup.nodes.Node child : el.childNodes()) {
+                buildTextWithNewlines(child, sb);
+            }
+            
+            if (isBlock && sb.length() > 0 && sb.charAt(sb.length() - 1) != '\n') {
+                sb.append("\n");
+            }
+        }
+    }
+
+    private LocalDate tryParseDate(String dateStr) {
+        if (dateStr == null) return null;
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d{2})[/-](\\d{2})[/-](\\d{4})");
+        java.util.regex.Matcher matcher = pattern.matcher(dateStr);
+        if (matcher.find()) {
+            String cleanDate = matcher.group();
+            try {
+                if (cleanDate.contains("/")) {
+                    return LocalDate.parse(cleanDate, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                } else if (cleanDate.contains("-")) {
+                    return LocalDate.parse(cleanDate, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+                }
+            } catch (Exception ignored) {}
+        }
         return null;
+    }
+
+    private String cleanBranding(String text) {
+        if (text == null) return null;
+        String cleaned = text.replaceAll("(?i)Sarkari\\s*Result®?\\s*(WWW\\.)?SARKARIRESULT\\.COM\\s*Since\\s*2012", "Nokri.online");
+        cleaned = cleaned.replaceAll("(?i)Sarkari\\s*Result®?", "Nokri.online");
+        cleaned = cleaned.replaceAll("(?i)sarkariresult\\.com", "nokri.online");
+        cleaned = cleaned.replaceAll("(?i)sarkariresult", "nokri.online");
+        cleaned = cleaned.replaceAll("(?i)Since\\s*2012", "");
+        return cleaned;
     }
 
     private String serializeMap(Map<String, String> map) {
