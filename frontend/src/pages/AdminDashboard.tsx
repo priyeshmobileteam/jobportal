@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft, CreditCard } from 'lucide-react';
+import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft, CreditCard, Users } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (window.location.port === '5173' ? 'http://localhost:8085' : '');
@@ -37,9 +37,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'listings' | 'payments'>('listings');
+  const [activeTab, setActiveTab] = useState<'listings' | 'payments' | 'users'>('listings');
   const [payments, setPayments] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
+
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +87,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     }
   }, [token, activeTab]);
 
+  useEffect(() => {
+    if (token && activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [token, activeTab]);
+
   const fetchPayments = () => {
     setLoadingPayments(true);
     fetch(`${API_BASE_URL}/api/admin/payments`, {
@@ -106,6 +115,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         console.error(err);
         setLoadingPayments(false);
       });
+  };
+
+  const fetchUsers = () => {
+    setLoadingUsers(true);
+    fetch(`${API_BASE_URL}/api/admin/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        if (res.status === 401 || res.status === 403) {
+          handleLogout();
+          throw new Error('Unauthorized');
+        }
+        return res.json();
+      })
+      .then(data => {
+        setUsers(data);
+        setLoadingUsers(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoadingUsers(false);
+      });
+  };
+
+  const handleToggleUserRole = (userId: number) => {
+    fetch(`${API_BASE_URL}/api/admin/users/${userId}/toggle-role`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to toggle user role');
+        return res.json();
+      })
+      .then(updatedUser => {
+        setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+      })
+      .catch(err => alert(err.message));
   };
 
   const toggleAdsEnabled = () => {
@@ -603,6 +653,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             >
               <CreditCard size={14} /> Payment Logs (Done Details)
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('users')}
+              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${activeTab === 'users' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <Users size={14} /> Manage Users (Ad-Free)
+            </button>
           </div>
 
           {/* Traffic Reports / Post Hits Table */}
@@ -819,6 +876,90 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                       ) : (
                         <tr>
                           <td colSpan={5} className="p-8 text-center text-slate-400">No premium subscription purchases logged.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Users List & Management Tab */}
+          {activeTab === 'users' && (
+            <div className="bg-white border border-slate-200 rounded-lg shadow overflow-hidden text-left">
+              <div className="bg-slate-800 text-white font-bold py-3 px-4 text-sm flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Users size={16} />
+                  <span>User Accounts & Ad-Free Permissions Manager</span>
+                </div>
+                <span className="bg-blue-900 text-[10px] py-0.5 px-2 rounded font-bold font-mono">
+                  {users.length} Registered
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                {loadingUsers ? (
+                  <div className="p-12 text-center text-slate-500 text-xs">Loading user list...</div>
+                ) : (
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold">
+                        <th className="p-3">User ID</th>
+                        <th className="p-3">Username / Mobile</th>
+                        <th className="p-3 text-center">Current Role</th>
+                        <th className="p-3 text-center">Ad-Free (Premium)</th>
+                        <th className="p-3 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {users.length > 0 ? (
+                        users.map(u => (
+                          <tr key={u.id} className="hover:bg-slate-50">
+                            <td className="p-3 font-mono text-slate-400">
+                              #{u.id}
+                            </td>
+                            <td className="p-3 font-semibold text-slate-800">
+                              {u.username}
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                u.role === 'ADMIN' ? 'bg-red-100 text-red-700' :
+                                u.role === 'PREMIUM' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                'bg-slate-100 text-slate-700'
+                              }`}>
+                                {u.role}
+                              </span>
+                            </td>
+                            <td className="p-3 text-center font-bold font-mono">
+                              {u.role === 'PREMIUM' || u.role === 'ADMIN' ? (
+                                <span className="text-emerald-600 font-bold">✔ Yes (Ad-Free)</span>
+                              ) : (
+                                <span className="text-slate-400">✘ No (Showing Ads)</span>
+                              )}
+                            </td>
+                            <td className="p-3 text-center">
+                              {u.role === 'ADMIN' ? (
+                                <span className="text-slate-400 text-[10px] italic">System Admin</span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleUserRole(u.id)}
+                                  className={`px-3 py-1 rounded text-[10px] font-bold shadow-sm transition-all cursor-pointer border ${
+                                    u.role === 'PREMIUM'
+                                      ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                                  }`}
+                                >
+                                  {u.role === 'PREMIUM' ? 'Remove Ad-Free' : 'Make Ad-Free'}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center text-slate-400">No user accounts found.</td>
                         </tr>
                       )}
                     </tbody>

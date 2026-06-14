@@ -59,4 +59,22 @@ public class UserService {
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
+
+    public java.util.List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public User toggleUserRole(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if ("ADMIN".equals(user.getRole())) {
+            return user;
+        }
+        if ("PREMIUM".equals(user.getRole())) {
+            user.setRole("USER");
+        } else {
+            user.setRole("PREMIUM");
+        }
+        return userRepository.save(user);
+    }
 }
