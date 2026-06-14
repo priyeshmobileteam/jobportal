@@ -26,19 +26,57 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
   const [loading, setLoading] = useState(true);
   const [, setAdminClicks] = useState(0);
 
-  // Premium & Ad-Free Checkout state
-  const [isPremium, setIsPremium] = useState(() => localStorage.getItem('user_ad_free') === 'true');
+  // User accounts & authentication states
+  const [userToken, setUserToken] = useState(() => localStorage.getItem('user_token') || '');
+  const [userName, setUserName] = useState(() => localStorage.getItem('user_username') || '');
+  const [userRole, setUserRole] = useState(() => localStorage.getItem('user_role') || 'GUEST');
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authUsername, setAuthUsername] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  // Derived premium state (ADMIN or PREMIUM roles get ad-free)
+  const isPremium = userRole === 'PREMIUM' || userRole === 'ADMIN';
+
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isBottomAdDismissed, setIsBottomAdDismissed] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'plans' | 'payment' | 'success'>('plans');
   const [selectedPlan, setSelectedPlan] = useState({ name: 'Annual Ad-Free Pass', price: 99 });
 
-  const handleUpgradeSuccess = () => {
-    localStorage.setItem('user_ad_free', 'true');
-    setIsPremium(true);
-    // Dispatch local event so other components immediately know about state update
+  const handleUserLogout = () => {
+    localStorage.removeItem('user_token');
+    localStorage.removeItem('user_username');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_ad_free');
+    setUserToken('');
+    setUserName('');
+    setUserRole('GUEST');
     window.dispatchEvent(new Event('storage'));
-    setCheckoutStep('success');
+  };
+
+  const handleUpgradeSuccess = () => {
+    // Send API call to upgrade the user role in the PostgreSQL database
+    fetch(`${API_BASE_URL}/api/auth/upgrade`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${userToken}`
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Payment was successful, but role upgrade failed. Please contact support.');
+        return res.json();
+      })
+      .then(data => {
+        const role = data.role || 'PREMIUM';
+        localStorage.setItem('user_role', role);
+        localStorage.setItem('user_ad_free', 'true');
+        setUserRole(role);
+        window.dispatchEvent(new Event('storage'));
+        setCheckoutStep('success');
+      })
+      .catch(err => alert(err.message));
   };
 
   const loadRazorpayScript = () => {
@@ -61,6 +99,15 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
     const keyId = localStorage.getItem('razorpay_key_id') || 'rzp_test_default';
     if (keyId === 'rzp_test_default') {
       alert('Razorpay Key ID is not configured. Please set the RAZORPAY_KEY_ID environment variable on Render.');
+    }
+
+    if (!userToken) {
+      alert('Please Sign In or Register an account first to link the premium subscription to your profile.');
+      setIsCheckoutOpen(false);
+      setAuthMode('login');
+      setAuthError('');
+      setIsAuthModalOpen(true);
+      return;
     }
 
     const options = {
@@ -91,6 +138,35 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
 
   // Fetch posts and increment global site views count
   useEffect(() => {
+    // Sync user role from database if logged in
+    if (userToken) {
+      fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${userToken}`
+        }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(data => {
+          if (data.role && data.role !== 'GUEST') {
+            localStorage.setItem('user_role', data.role);
+            if (data.role === 'PREMIUM' || data.role === 'ADMIN') {
+              localStorage.setItem('user_ad_free', 'true');
+            } else {
+              localStorage.removeItem('user_ad_free');
+            }
+            setUserRole(data.role);
+          } else {
+            handleUserLogout();
+          }
+        })
+        .catch(() => {
+          handleUserLogout();
+        });
+    }
+
     // Record hit & get total views
     fetch(`${API_BASE_URL}/api/posts/stats/hit`, { method: 'POST' })
       .then(res => res.json())
@@ -116,7 +192,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
         console.error('Failed to load posts', err);
         setLoading(false);
       });
-  }, []);
+  }, [userToken]);
 
   const results = groupedPosts['RESULT'] || [];
   const admitCards = groupedPosts['ADMIT_CARD'] || [];
@@ -198,16 +274,34 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
             <a href="#answer-key" className="px-4 py-3 hover:bg-blue-800 transition-colors">Answer Key</a>
           </div>
           <div className="flex items-center gap-3">
-            {isPremium ? (
-              <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-900 font-extrabold text-[10px] tracking-wide uppercase px-2.5 py-1 rounded-full shadow border border-yellow-300 flex items-center gap-1">
-                ⭐ Premium Active
-              </span>
+            {userToken ? (
+              <div className="flex items-center gap-2.5 text-xs text-blue-100">
+                <span>Hi, <strong className="text-white">{userName}</strong></span>
+                {isPremium ? (
+                  <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-900 font-extrabold text-[9px] uppercase px-2 py-0.5 rounded shadow border border-yellow-300">
+                    ⭐ Premium
+                  </span>
+                ) : (
+                  <button 
+                    onClick={() => setIsCheckoutOpen(true)}
+                    className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold text-[9px] uppercase px-2 py-0.5 rounded shadow cursor-pointer transition-all hover:scale-102"
+                  >
+                    Get Premium
+                  </button>
+                )}
+                <button 
+                  onClick={handleUserLogout}
+                  className="text-red-400 hover:text-red-300 font-bold uppercase text-[9px] cursor-pointer ml-1"
+                >
+                  Logout
+                </button>
+              </div>
             ) : (
               <button 
-                onClick={() => setIsCheckoutOpen(true)}
-                className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold text-[10px] tracking-wide uppercase px-3 py-1.5 rounded-full shadow transition-all hover:scale-105 flex items-center gap-1 cursor-pointer"
+                onClick={() => { setAuthMode('login'); setAuthError(''); setIsAuthModalOpen(true); }}
+                className="bg-blue-800 hover:bg-blue-700 text-white font-extrabold text-[10px] uppercase px-3 py-1.5 rounded shadow border border-blue-700 cursor-pointer transition-all hover:scale-102"
               >
-                🚫 Remove Ads
+                Sign In
               </button>
             )}
             <div className="hidden lg:flex items-center px-4 py-2 font-mono text-xs text-yellow-300">
@@ -654,6 +748,122 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
         </div>
       )}
 
+      {/* User Auth Modal (Login/Register) */}
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-150">
+            <div className="bg-blue-900 text-white p-5 relative text-left">
+              <button 
+                onClick={() => setIsAuthModalOpen(false)}
+                className="absolute top-4 right-4 text-slate-300 hover:text-white font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+              <h3 className="text-lg font-bold">{authMode === 'login' ? 'Sign In to Account' : 'Register New Account'}</h3>
+              <p className="text-xs text-blue-200 mt-1">Unlock ad-free experience linked specifically to your profile.</p>
+            </div>
+            
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                setAuthError('');
+                const url = `${API_BASE_URL}/api/auth/${authMode}`;
+                fetch(url, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ username: authUsername, password: authPassword })
+                })
+                  .then(async res => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Authentication failed');
+                    return data;
+                  })
+                  .then(data => {
+                    if (authMode === 'login') {
+                      localStorage.setItem('user_token', data.token);
+                      localStorage.setItem('user_username', data.username);
+                      localStorage.setItem('user_role', data.role);
+                      if (data.role === 'PREMIUM' || data.role === 'ADMIN') {
+                        localStorage.setItem('user_ad_free', 'true');
+                      } else {
+                        localStorage.removeItem('user_ad_free');
+                      }
+                      setUserToken(data.token);
+                      setUserName(data.username);
+                      setUserRole(data.role);
+                      window.dispatchEvent(new Event('storage'));
+                      setIsAuthModalOpen(false);
+                    } else {
+                      // Switch to login
+                      alert('Registration successful! Please login now.');
+                      setAuthMode('login');
+                    }
+                  })
+                  .catch(err => setAuthError(err.message));
+              }}
+              className="p-5 space-y-4 text-left text-xs"
+            >
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Username / Mobile Number</label>
+                <input 
+                  type="text" 
+                  required
+                  value={authUsername}
+                  onChange={(e) => setAuthUsername(e.target.value)}
+                  className="w-full px-3 py-2 border rounded focus:ring-1 focus:ring-blue-900 text-xs"
+                  placeholder="Enter username"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Password</label>
+                <input 
+                  type="password" 
+                  required
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  className="w-full px-3 py-2 border rounded focus:ring-1 focus:ring-blue-900 text-xs"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {authError && (
+                <p className="text-red-600 font-bold text-center leading-tight">{authError}</p>
+              )}
+
+              <button 
+                type="submit"
+                className="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-2.5 rounded shadow text-xs transition-colors cursor-pointer"
+              >
+                {authMode === 'login' ? 'Login' : 'Sign Up'}
+              </button>
+
+              <p className="text-center text-slate-500 mt-2 text-[10px]">
+                {authMode === 'login' ? (
+                  <>
+                    Don't have an account?{' '}
+                    <span 
+                      onClick={() => { setAuthMode('register'); setAuthError(''); }}
+                      className="text-blue-700 font-bold cursor-pointer hover:underline"
+                    >
+                      Register Now
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <span 
+                      onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                      className="text-blue-700 font-bold cursor-pointer hover:underline"
+                    >
+                      Login Here
+                    </span>
+                  </>
+                )}
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

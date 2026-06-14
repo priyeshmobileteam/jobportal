@@ -1,6 +1,7 @@
 package com.sarkariresult.clone.controller;
 
 import com.sarkariresult.clone.security.JwtTokenProvider;
+import com.sarkariresult.clone.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
@@ -21,6 +22,9 @@ public class AuthController {
     @Autowired
     private JwtTokenProvider tokenProvider;
 
+    @Autowired
+    private UserService userService;
+
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         try {
@@ -34,11 +38,12 @@ public class AuthController {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String jwt = tokenProvider.generateToken(authentication);
 
+            com.sarkariresult.clone.model.User user = userService.findByUsername(loginRequest.getUsername()).orElse(null);
             Map<String, String> response = new HashMap<>();
             response.put("token", jwt);
             response.put("type", "Bearer");
             response.put("username", loginRequest.getUsername());
-            response.put("role", "ADMIN");
+            response.put("role", user != null ? user.getRole() : "USER");
 
             return ResponseEntity.ok(response);
         } catch (BadCredentialsException ex) {
@@ -47,6 +52,74 @@ public class AuthController {
             return ResponseEntity.status(401).body(errors);
         }
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody LoginRequest registrationRequest) {
+        try {
+            com.sarkariresult.clone.model.User registeredUser = userService.registerUser(
+                    registrationRequest.getUsername(),
+                    registrationRequest.getPassword()
+            );
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "User registered successfully");
+            response.put("username", registeredUser.getUsername());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errors = new HashMap<>();
+            errors.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errors);
+        }
+    }
+
+    @PostMapping("/upgrade")
+    public ResponseEntity<?> upgradeToPremium() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "Unauthorized: Please log in first");
+            return ResponseEntity.status(401).body(response);
+        }
+        String username = auth.getName();
+        try {
+            com.sarkariresult.clone.model.User upgraded = userService.upgradeUserToPremium(username);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "User upgraded to PREMIUM successfully");
+            response.put("username", username);
+            response.put("role", upgraded.getRole());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            Map<String, String> response = new HashMap<>();
+            response.put("role", "GUEST");
+            return ResponseEntity.ok(response);
+        }
+        String username = auth.getName();
+        try {
+            com.sarkariresult.clone.model.User user = userService.findByUsername(username).orElse(null);
+            Map<String, String> response = new HashMap<>();
+            if (user != null) {
+                response.put("username", username);
+                response.put("role", user.getRole());
+            } else {
+                response.put("role", "GUEST");
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("role", "GUEST");
+            return ResponseEntity.ok(response);
+        }
+    }
+
 
     public static class LoginRequest {
         private String username;
