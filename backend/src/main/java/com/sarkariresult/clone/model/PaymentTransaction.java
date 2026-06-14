@@ -1,7 +1,7 @@
 package com.sarkariresult.clone.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "payment_transactions")
@@ -21,7 +21,7 @@ public class PaymentTransaction {
     private String planName;
 
     @Column(nullable = false)
-    private LocalDateTime paymentDate;
+    private Instant paymentDate;
 
     @Column(length = 150)
     private String razorpayPaymentId;
@@ -40,8 +40,8 @@ public class PaymentTransaction {
     public String getPlanName() { return planName; }
     public void setPlanName(String planName) { this.planName = planName; }
 
-    public LocalDateTime getPaymentDate() { return paymentDate; }
-    public void setPaymentDate(LocalDateTime paymentDate) { this.paymentDate = paymentDate; }
+    public Instant getPaymentDate() { return paymentDate; }
+    public void setPaymentDate(Instant paymentDate) { this.paymentDate = paymentDate; }
 
     public String getRazorpayPaymentId() { return razorpayPaymentId; }
     public void setRazorpayPaymentId(String razorpayPaymentId) { this.razorpayPaymentId = razorpayPaymentId; }

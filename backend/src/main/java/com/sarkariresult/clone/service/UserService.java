@@ -49,7 +49,7 @@ public class UserService {
         transaction.setUsername(username);
         transaction.setAmount(upgradeRequest.getAmount() != null ? upgradeRequest.getAmount() : 99.0);
         transaction.setPlanName(upgradeRequest.getPlanName() != null ? upgradeRequest.getPlanName() : "Premium Upgrade");
-        transaction.setPaymentDate(java.time.LocalDateTime.now());
+        transaction.setPaymentDate(java.time.Instant.now());
         transaction.setRazorpayPaymentId(upgradeRequest.getRazorpayPaymentId());
         paymentTransactionRepository.save(transaction);
 
