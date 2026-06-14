@@ -69,6 +69,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   useEffect(() => {
     if (token) {
       fetchPosts();
+      fetchPayments();
+      fetchUsers();
       // Fetch stats to get current ads enabled status
       fetch(`${API_BASE_URL}/api/posts/stats`)
         .then(res => res.json())
@@ -587,6 +589,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
         {/* Data List & Scraper Column */}
         <section className="col-span-12 lg:col-span-7 flex flex-col gap-6">
+          
+          {/* Analytics Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm text-left">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Listings</span>
+              <span className="text-xl font-black text-slate-800">{posts.length}</span>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm text-left">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Registered Users</span>
+              <span className="text-xl font-black text-slate-800">{users.length}</span>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm text-left">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Payments Logged</span>
+              <span className="text-xl font-black text-slate-800">{payments.length}</span>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm text-left">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Earnings</span>
+              <span className="text-xl font-black text-emerald-600 font-mono">₹{payments.reduce((acc, curr) => acc + (curr.amount || 0), 0)}</span>
+            </div>
+          </div>
           
           {/* Global Configurations Tool */}
           <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4 text-left">
