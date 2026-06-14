@@ -5,6 +5,7 @@ export interface User {
   lastName: string;
   phoneNumber?: string;
   roles: string[];
+  isPremium?: boolean;
 }
 
 export interface AuthResponse {
@@ -15,6 +16,7 @@ export interface AuthResponse {
   firstName: string;
   lastName: string;
   roles: string[];
+  isPremium?: boolean;
 }
 
 export interface Job {

@@ -1,27 +1,26 @@
 server:
-  port: 8080
-
+  port: ${PORT:8080}
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/jobportal
-    username: postgres
-    password: root
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/jobportal}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
 app:
   jwt:
-    secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
-    expiration-ms: 86400000 # 24 hours
-    refresh-expiration-ms: 604800000 # 7 days
+    secret: ${JWT_SECRET:5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437}
+    expiration-ms: 86400000
+    refresh-expiration-ms: 604800000
   sms:
-    api-key: 4YjLFQI82ilyAZfSER1spGDTCK5a0UXMNOduHWzhB7gqx69t3VCRlnxwLIf3Kv9PFa67YAHJkONToi4j
+    api-key: ${SMS_API_KEY:4YjLFQI82ilyAZfSER1spGDTCK5a0UXMNOduHWzhB7gqx69t3VCRlnxwLIf3Kv9PFa67YAHJkONToi4j}
     api-url: https://www.fast2sms.com/dev/bulkV2

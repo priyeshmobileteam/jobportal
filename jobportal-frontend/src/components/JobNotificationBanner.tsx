@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 import api from '../services/api';
 
 interface Job {
@@ -27,8 +29,11 @@ const TILE_COLORS = [
 ];
 
 export function JobNotificationBanner({ setView }: Props) {
+  const { user } = useSelector((state: RootState) => state.auth);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [visible, setVisible] = useState(true);
+
+  const isPremium = user?.isPremium || false;
 
   useEffect(() => {
     api.get('/jobs/search?page=0&size=10')
@@ -39,7 +44,7 @@ export function JobNotificationBanner({ setView }: Props) {
       .catch(() => setJobs([]));
   }, []);
 
-  if (!visible || jobs.length === 0) return null;
+  if (isPremium || !visible || jobs.length === 0) return null;
 
   return (
     <div className="relative w-full bg-gray-900 border-b border-gray-700 py-2 px-3">

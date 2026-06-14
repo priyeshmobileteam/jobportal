@@ -88,6 +88,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, currentView, se
                 <Calendar className="w-5 h-5" />
                 <span>Interviews</span>
               </button>
+              <button
+                onClick={() => handleNav('premium-subscription')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all ${
+                  currentView === 'premium-subscription'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <PlusCircle className="w-5 h-5" />
+                <span>Get Premium ⭐</span>
+              </button>
             </>
           )}
 
@@ -154,6 +165,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, currentView, se
               >
                 <Users className="w-5 h-5" />
                 <span>User Management</span>
+              </button>
+              <button
+                onClick={() => handleNav('admin-payments')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all ${
+                  currentView === 'admin-payments'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Database className="w-5 h-5" />
+                <span>Transactions</span>
               </button>
               <button
                 onClick={() => handleNav('admin-logs')}

@@ -15,6 +15,8 @@ import { Interviews } from './pages/jobs/Interviews';
 import { AdminJobs } from './pages/admin/AdminJobs';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminLogs } from './pages/admin/AdminLogs';
+import { AdminPayments } from './pages/admin/AdminPayments';
+import { PremiumSubscription } from './pages/profiles/PremiumSubscription';
 import { useSelector } from 'react-redux';
 import { RootState } from './redux/store';
 
@@ -74,6 +76,10 @@ function App() {
         return <AdminUsers />;
       case 'admin-logs':
         return <AdminLogs />;
+      case 'admin-payments':
+        return <AdminPayments />;
+      case 'premium-subscription':
+        return <PremiumSubscription />;
       default:
         return <JobList />;
     }

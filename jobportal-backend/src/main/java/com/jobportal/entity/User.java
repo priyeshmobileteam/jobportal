@@ -48,6 +48,12 @@ public class User {
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt = ZonedDateTime.now();
 
+    @Column(name = "is_premium")
+    private Boolean isPremium = false;
+
+    @Column(name = "premium_until")
+    private ZonedDateTime premiumUntil;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",
