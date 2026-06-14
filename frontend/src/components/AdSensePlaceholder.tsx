@@ -21,8 +21,9 @@ export const AdSensePlaceholder: React.FC<AdSensePlaceholderProps> = ({
   label = 'Google AdSense Banner'
 }) => {
   const isAdFree = localStorage.getItem('user_ad_free') === 'true';
+  const globalAdsEnabled = localStorage.getItem('global_ads_enabled') !== 'false';
 
-  if (isAdFree) {
+  if (isAdFree || !globalAdsEnabled) {
     return null;
   }
 

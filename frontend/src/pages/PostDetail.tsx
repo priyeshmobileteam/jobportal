@@ -33,6 +33,17 @@ export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    fetch(`${API_BASE_URL}/api/posts/stats`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.adsEnabled !== undefined) {
+          localStorage.setItem('global_ads_enabled', data.adsEnabled.toString());
+        }
+      })
+      .catch(err => console.error('Failed to fetch stats', err));
+  }, []);
+
+  useEffect(() => {
     fetch(`${API_BASE_URL}/api/posts/${postId}`)
       .then((res) => {
         if (!res.ok) throw new Error('Post not found');

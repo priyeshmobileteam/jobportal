@@ -21,6 +21,9 @@ public class AdminPostController {
     @Autowired
     private JobSyncScheduler jobSyncScheduler;
 
+    @Autowired
+    private com.sarkariresult.clone.service.SiteViewsService siteViewsService;
+
     // Get list of all posts for admin view with hits/views tracking
     @GetMapping
     public ResponseEntity<List<Post>> getAllPosts() {
@@ -45,6 +48,16 @@ public class AdminPostController {
     public ResponseEntity<Void> deletePost(@PathVariable Long id) {
         postService.deletePost(id);
         return ResponseEntity.ok().build();
+    }
+
+    // Toggle ads globally
+    @PostMapping("/ads/toggle")
+    public ResponseEntity<Map<String, Boolean>> toggleAds(@RequestBody Map<String, Boolean> body) {
+        boolean enabled = body.getOrDefault("enabled", true);
+        siteViewsService.setAdsEnabled(enabled);
+        Map<String, Boolean> res = new HashMap<>();
+        res.put("adsEnabled", enabled);
+        return ResponseEntity.ok(res);
     }
 
     // Manually trigger the Jsoup scraper sync from SarkariResult

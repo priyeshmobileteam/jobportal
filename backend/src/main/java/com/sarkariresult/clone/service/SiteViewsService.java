@@ -28,4 +28,19 @@ public class SiteViewsService {
                 .map(SiteViews::getCount)
                 .orElse(0L);
     }
+
+    @Transactional
+    public boolean getAdsEnabled() {
+        return repository.findById("ads_enabled")
+                .map(views -> views.getCount() == 1L)
+                .orElse(true); // default to true
+    }
+
+    @Transactional
+    public void setAdsEnabled(boolean enabled) {
+        SiteViews views = repository.findById("ads_enabled")
+                .orElse(new SiteViews("ads_enabled", 1L));
+        views.setCount(enabled ? 1L : 0L);
+        repository.save(views);
+    }
 }

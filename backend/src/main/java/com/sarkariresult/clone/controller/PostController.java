@@ -51,6 +51,7 @@ public class PostController {
         Long totalHits = siteViewsService.incrementGlobalViews();
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalViews", totalHits);
+        stats.put("adsEnabled", siteViewsService.getAdsEnabled());
         return ResponseEntity.ok(stats);
     }
 
@@ -60,6 +61,7 @@ public class PostController {
         Long totalHits = siteViewsService.getGlobalViews();
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalViews", totalHits);
+        stats.put("adsEnabled", siteViewsService.getAdsEnabled());
         return ResponseEntity.ok(stats);
     }
 }

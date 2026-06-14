@@ -46,7 +46,12 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
     // Record hit & get total views
     fetch(`${API_BASE_URL}/api/posts/stats/hit`, { method: 'POST' })
       .then(res => res.json())
-      .then(data => setTotalViews(data.totalViews || 0))
+      .then(data => {
+        setTotalViews(data.totalViews || 0);
+        if (data.adsEnabled !== undefined) {
+          localStorage.setItem('global_ads_enabled', data.adsEnabled.toString());
+        }
+      })
       .catch(err => console.error('Failed to log site view', err));
 
     // Fetch posts

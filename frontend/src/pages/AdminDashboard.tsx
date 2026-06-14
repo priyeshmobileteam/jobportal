@@ -56,11 +56,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [applyUrl, setApplyUrl] = useState('');
   const [webUrl, setWebUrl] = useState('');
 
+  const [adsEnabled, setAdsEnabled] = useState(true);
+
   useEffect(() => {
     if (token) {
       fetchPosts();
+      // Fetch stats to get current ads enabled status
+      fetch(`${API_BASE_URL}/api/posts/stats`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.adsEnabled !== undefined) {
+            setAdsEnabled(data.adsEnabled);
+          }
+        })
+        .catch(err => console.error('Failed to fetch stats', err));
     }
   }, [token]);
+
+  const toggleAdsEnabled = () => {
+    const nextStatus = !adsEnabled;
+    fetch(`${API_BASE_URL}/api/admin/posts/ads/toggle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ enabled: nextStatus })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to toggle ads');
+        return res.json();
+      })
+      .then(data => {
+        setAdsEnabled(data.adsEnabled);
+        localStorage.setItem('global_ads_enabled', data.adsEnabled.toString());
+      })
+      .catch(err => alert(err.message));
+  };
 
   const fetchPosts = () => {
     setLoading(true);
@@ -471,6 +503,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         {/* Data List & Scraper Column */}
         <section className="col-span-12 lg:col-span-7 flex flex-col gap-6">
           
+          {/* Global Configurations Tool */}
+          <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4 text-left">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                  <span>⚙ Global Portal Configuration</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Configure live ad placements and future payment options.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-dashed border-slate-100">
+              <div>
+                <span className="font-bold text-xs text-slate-700 block">Google AdSense Delivery</span>
+                <span className="text-[10px] text-slate-400 block">Turn off to completely hide all ads across the portal for all visitors.</span>
+              </div>
+              <button
+                onClick={toggleAdsEnabled}
+                className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${adsEnabled ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'}`}
+              >
+                <span className="bg-white w-4 h-4 rounded-full shadow-md transition-all block"></span>
+              </button>
+            </div>
+          </div>
+
           {/* Web Scraper Tool */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
             <div>
