@@ -86,13 +86,21 @@ public class JobSyncScheduler {
 
                 // Extract all active links inside this categorized list
                 Elements items = list.select("li a");
-                for (Element item : items) {
+                // Loop in reverse (bottom to top) to ensure top items get the newest timestamp
+                for (int k = items.size() - 1; k >= 0; k--) {
+                    Element item = items.get(k);
                     String href = item.attr("abs:href");
                     String text = item.text().trim();
                     if (text.isEmpty() || text.length() < 5) continue;
 
                     String cleanedTitle = cleanBranding(text);
-                    if (!postRepository.existsByTitle(cleanedTitle)) {
+                    Optional<Post> existingPostOpt = postRepository.findByTitle(cleanedTitle);
+                    if (existingPostOpt.isPresent()) {
+                        Post existingPost = existingPostOpt.get();
+                        existingPost.setLastUpdateDate(LocalDateTime.now());
+                        postRepository.save(existingPost);
+                        Thread.sleep(30);
+                    } else {
                         boolean success = parseAndSaveDetailPage(href, cleanedTitle, category);
                         if (success) {
                             count++;
@@ -119,6 +127,20 @@ public class JobSyncScheduler {
 
     private boolean parseAndSaveDetailPage(String url, String title, Category category) {
         try {
+            // Direct save for external/non-sarkari links
+            if (!url.contains("sarkariresult.com")) {
+                Post post = new Post();
+                post.setTitle(cleanBranding(title));
+                post.setCategory(category);
+                post.setPostDate(LocalDateTime.now());
+                post.setLastUpdateDate(LocalDateTime.now());
+                post.setOfficialWebsiteUrl(url);
+                post.setApplyOnlineUrl(url);
+                post.setShortInfo("Direct link to official portal: " + url);
+                postRepository.save(post);
+                return true;
+            }
+
             Document detailDoc = Jsoup.connect(url)
                     .userAgent(USER_AGENT)
                     .timeout(10000)
