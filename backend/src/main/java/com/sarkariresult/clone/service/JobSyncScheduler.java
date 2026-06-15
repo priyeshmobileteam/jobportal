@@ -387,7 +387,9 @@ public class JobSyncScheduler {
         String cleaned = text.replaceAll("(?i)Sarkari\\s*Result®?\\s*(WWW\\.)?SARKARIRESULT\\.COM\\s*Since\\s*2012", "Nokri.online");
         cleaned = cleaned.replaceAll("(?i)Sarkari\\s*Result®?", "Nokri.online");
         cleaned = cleaned.replaceAll("(?i)sarkariresult\\.com", "nokri.online");
+        cleaned = cleaned.replaceAll("(?i)sarkariresults?", "nokri.online");
         cleaned = cleaned.replaceAll("(?i)sarkariresult", "nokri.online");
+        cleaned = cleaned.replaceAll("(?i)sarkari\\s*results?", "nokri.online");
         cleaned = cleaned.replaceAll("(?i)Since\\s*2012", "");
         return cleaned;
     }
