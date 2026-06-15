@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AdSensePlaceholder } from '../components/AdSensePlaceholder';
-import { BookOpen, Award, FileText, CheckSquare, PlusCircle, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 
 interface Post {
   id: number;
@@ -211,16 +211,15 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
   const allPostsFlattened = [...latestJobs, ...admitCards, ...results].slice(0, 10);
 
   // Colors for Hot Links matching the user's screenshot
-  // Colors for Hot Links matching the user's screenshot
   const hotColors = [
-    'bg-red-600 hover:bg-red-700 text-white',
-    'bg-orange-500 hover:bg-orange-600 text-white',
-    'bg-fuchsia-600 hover:bg-fuchsia-700 text-white',
-    'bg-blue-800 hover:bg-blue-900 text-white',
-    'bg-lime-700 hover:bg-lime-800 text-white',
-    'bg-sky-500 hover:bg-sky-600 text-white',
-    'bg-amber-900 hover:bg-amber-950 text-white',
-    'bg-emerald-700 hover:bg-emerald-800 text-white'
+    'bg-[#7a8b00] hover:bg-opacity-90 text-white',
+    'bg-[#0e38bc] hover:bg-opacity-90 text-white',
+    'bg-[#ff5e00] hover:bg-opacity-90 text-white',
+    'bg-[#900000] hover:bg-opacity-90 text-white',
+    'bg-[#ff2101] hover:bg-opacity-90 text-white',
+    'bg-[#006307] hover:bg-opacity-90 text-white',
+    'bg-[#ea30b7] hover:bg-opacity-90 text-white',
+    'bg-[#1a80e6] hover:bg-opacity-90 text-white'
   ];
 
   // Dynamically select hot links from latest jobs, admit cards, and results
@@ -373,12 +372,12 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
           </div>
 
           {/* 4. Hot Links Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 my-4">
             {dynamicHotLinks.map((post, idx) => (
               <button
                 key={post.id}
                 onClick={() => onSelectPost(post.id)}
-                className={`${hotColors[idx % hotColors.length]} p-4 rounded-lg font-bold text-xs md:text-sm text-center shadow-md transition-all hover:scale-102 hover:shadow-lg flex items-center justify-center min-h-[70px] leading-tight cursor-pointer`}
+                className={`${hotColors[idx % hotColors.length]} p-4 rounded-none font-bold text-xs md:text-sm text-center shadow transition-all hover:scale-102 hover:shadow-md flex items-center justify-center min-h-[70px] leading-tight cursor-pointer`}
               >
                 {post.title}
               </button>
@@ -397,10 +396,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 
                 {/* Column 1: Results */}
-                <div id="results" className="bg-white border border-red-600/30 rounded-lg shadow-md overflow-hidden">
-                  <div className="bg-red-600 text-white font-bold py-2.5 px-4 text-center text-lg shadow-sm flex items-center justify-center gap-2">
-                    <Award size={18} />
-                    <span>Results (परिणाम)</span>
+                <div id="results" className="bg-white border-2 border-[#ff6600] rounded-none shadow-md overflow-hidden">
+                  <div className="bg-[#990033] text-white font-bold py-2 text-center text-xl tracking-wide uppercase border-b-2 border-[#ff6600]">
+                    Result
                   </div>
                   <div className="p-3 divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
                     {results.length > 0 ? (
@@ -421,10 +419,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 </div>
 
                 {/* Column 2: Admit Card */}
-                <div id="admit-cards" className="bg-white border border-red-600/30 rounded-lg shadow-md overflow-hidden">
-                  <div className="bg-red-600 text-white font-bold py-2.5 px-4 text-center text-lg shadow-sm flex items-center justify-center gap-2">
-                    <FileText size={18} />
-                    <span>Admit Card (प्रवेश पत्र)</span>
+                <div id="admit-cards" className="bg-white border-2 border-[#ff6600] rounded-none shadow-md overflow-hidden">
+                  <div className="bg-[#990033] text-white font-bold py-2 text-center text-xl tracking-wide uppercase border-b-2 border-[#ff6600]">
+                    Admit Card
                   </div>
                   <div className="p-3 divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
                     {admitCards.length > 0 ? (
@@ -445,10 +442,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 </div>
 
                 {/* Column 3: Latest Jobs */}
-                <div id="latest-jobs" className="bg-white border border-red-600/30 rounded-lg shadow-md overflow-hidden">
-                  <div className="bg-red-600 text-white font-bold py-2.5 px-4 text-center text-lg shadow-sm flex items-center justify-center gap-2">
-                    <PlusCircle size={18} />
-                    <span>Latest Jobs (नौकरियां)</span>
+                <div id="latest-jobs" className="bg-white border-2 border-[#ff6600] rounded-none shadow-md overflow-hidden">
+                  <div className="bg-[#990033] text-white font-bold py-2 text-center text-xl tracking-wide uppercase border-b-2 border-[#ff6600]">
+                    Latest Job
                   </div>
                   <div className="p-3 divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
                     {latestJobs.length > 0 ? (
@@ -477,10 +473,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 
                 {/* Column 1: Answer Key */}
-                <div id="answer-key" className="bg-white border border-slate-200 rounded-lg shadow-md overflow-hidden">
-                  <div className="bg-slate-800 text-white font-bold py-2 px-4 text-center text-md flex items-center justify-center gap-2">
-                    <CheckSquare size={16} />
-                    <span>Answer Key (उत्तर कुंजी)</span>
+                <div id="answer-key" className="bg-white border-2 border-[#ff6600] rounded-none shadow-md overflow-hidden">
+                  <div className="bg-[#990033] text-white font-bold py-2 text-center text-xl tracking-wide uppercase border-b-2 border-[#ff6600]">
+                    Answer Key
                   </div>
                   <div className="p-3 divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
                     {answerKeys.length > 0 ? (
@@ -501,10 +496,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 </div>
 
                 {/* Column 2: Syllabus */}
-                <div id="syllabus" className="bg-white border border-slate-200 rounded-lg shadow-md overflow-hidden">
-                  <div className="bg-slate-800 text-white font-bold py-2 px-4 text-center text-md flex items-center justify-center gap-2">
-                    <BookOpen size={16} />
-                    <span>Syllabus (पाठ्यक्रम)</span>
+                <div id="syllabus" className="bg-white border-2 border-[#ff6600] rounded-none shadow-md overflow-hidden">
+                  <div className="bg-[#990033] text-white font-bold py-2 text-center text-xl tracking-wide uppercase border-b-2 border-[#ff6600]">
+                    Syllabus
                   </div>
                   <div className="p-3 divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
                     {syllabus.length > 0 ? (
@@ -525,10 +519,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 </div>
 
                 {/* Column 3: Admission */}
-                <div id="admission" className="bg-white border border-slate-200 rounded-lg shadow-md overflow-hidden">
-                  <div className="bg-slate-800 text-white font-bold py-2 px-4 text-center text-md flex items-center justify-center gap-2">
-                    <PlusCircle size={16} />
-                    <span>Admission (प्रवेश)</span>
+                <div id="admission" className="bg-white border-2 border-[#ff6600] rounded-none shadow-md overflow-hidden">
+                  <div className="bg-[#990033] text-white font-bold py-2 text-center text-xl tracking-wide uppercase border-b-2 border-[#ff6600]">
+                    Admission
                   </div>
                   <div className="p-3 divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
                     {admissions.length > 0 ? (
