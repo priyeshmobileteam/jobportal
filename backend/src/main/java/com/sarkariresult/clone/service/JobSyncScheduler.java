@@ -98,6 +98,10 @@ public class JobSyncScheduler {
                     if (existingPostOpt.isPresent()) {
                         Post existingPost = existingPostOpt.get();
                         existingPost.setLastUpdateDate(LocalDateTime.now());
+                        if (existingPost.getCategory() != category) {
+                            System.out.println("Updating category for post '" + cleanedTitle + "' from " + existingPost.getCategory() + " to " + category);
+                            existingPost.setCategory(category);
+                        }
                         postRepository.save(existingPost);
                         Thread.sleep(30);
                     } else {
