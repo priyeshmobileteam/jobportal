@@ -54,7 +54,7 @@ public class JobSyncScheduler {
                         String href = el.attr("abs:href").toLowerCase();
                         String text = el.text().trim().toLowerCase();
 
-                        if (href.contains("/latestjob/") || href.contains("/outsourcing/") || text.contains("latest job") || text.contains("latestjob") || text.contains("outsourcing")) {
+                        if (href.contains("/latestjob/") || text.contains("latest job") || text.contains("latestjob")) {
                             category = Category.JOB;
                             break;
                         } else if (href.contains("/admitcard/") || text.contains("admit card") || text.contains("admitcard")) {
@@ -71,7 +71,7 @@ public class JobSyncScheduler {
                         } else if (href.contains("/syllabus/") || text.contains("syllabus")) {
                             category = Category.SYLLABUS;
                             break;
-                        } else if (href.contains("/admission/") || href.contains("/certificate/") || href.contains("/important/") || text.contains("admission") || text.contains("certificate") || text.contains("important")) {
+                        } else if (href.contains("/admission/") || href.contains("/certificate/") || href.contains("/important/") || href.contains("/outsourcing/") || text.contains("admission") || text.contains("certificate") || text.contains("important") || text.contains("outsourcing")) {
                             category = Category.ADMISSION;
                             break;
                         }
