@@ -476,9 +476,14 @@ public class JobSyncScheduler {
 
     private String cleanBranding(String text) {
         if (text == null) return null;
-        String cleaned = text.replaceAll("(?i)Sarkari\\s*Result®?\\s*(WWW\\.)?SARKARIRESULT\\.COM\\s*Since\\s*2012", "Nokri.online");
+        
+        // Replace full uppercase/mixed-case domains first to prevent double-extension (.online.COM)
+        String cleaned = text.replaceAll("(?i)WWW\\.SARKARIRESULT\\.COM", "www.nokri.online");
+        cleaned = cleaned.replaceAll("(?i)SARKARIRESULT\\.COM", "nokri.online");
+        
+        // Clean remaining branding terms
+        cleaned = cleaned.replaceAll("(?i)Sarkari\\s*Result®?\\s*(WWW\\.)?SARKARIRESULT\\.COM\\s*Since\\s*2012", "Nokri.online");
         cleaned = cleaned.replaceAll("(?i)Sarkari\\s*Result®?", "Nokri.online");
-        cleaned = cleaned.replaceAll("(?i)sarkariresult\\.com", "nokri.online");
         cleaned = cleaned.replaceAll("(?i)sarkariresults?", "nokri.online");
         cleaned = cleaned.replaceAll("(?i)sarkariresult", "nokri.online");
         cleaned = cleaned.replaceAll("(?i)sarkari\\s*results?", "nokri.online");
