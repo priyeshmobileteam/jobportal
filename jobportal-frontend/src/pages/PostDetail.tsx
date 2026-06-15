@@ -27,7 +27,7 @@ interface Post {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.port === '5173' ? 'http://localhost:8085' : 'https://careersphere-api.onrender.com');
+  (window.location.port === '5173' ? 'http://localhost:8085' : 'https://nokri-online.onrender.com');
 
 export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
   const [post, setPost] = useState<Post | null>(null);
