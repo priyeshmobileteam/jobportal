@@ -10,6 +10,8 @@ interface Post {
   lastUpdateDate: string;
   totalPosts: number;
   views: number;
+  isHotLink?: boolean;
+  hotLinkTitle?: string;
 }
 
 interface HomeProps {
@@ -223,12 +225,15 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
     'bg-emerald-700 hover:bg-emerald-800 text-white'
   ];
 
-  // Dynamically select hot links from latest jobs, admit cards, and results
-  const dynamicHotLinks = [
-    ...latestJobs.slice(0, 4),
-    ...admitCards.slice(0, 2),
-    ...results.slice(0, 2)
-  ].slice(0, 8);
+  // Get hot links from API, fallback to dynamic selection if not present
+  const apiHotLinks = groupedPosts['HOT_LINKS'] || [];
+  const dynamicHotLinks = apiHotLinks.length > 0 
+    ? apiHotLinks 
+    : [
+        ...latestJobs.slice(0, 4),
+        ...admitCards.slice(0, 2),
+        ...results.slice(0, 2)
+      ].slice(0, 8);
 
   return (
     <div className="w-full bg-slate-50 min-h-screen pb-20">
@@ -380,7 +385,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
                 onClick={() => onSelectPost(post.id)}
                 className={`${hotColors[idx % hotColors.length]} p-4 rounded-lg font-bold text-xs md:text-sm text-center shadow-md transition-all hover:scale-102 hover:shadow-lg flex items-center justify-center min-h-[70px] leading-tight cursor-pointer`}
               >
-                {post.title}
+                {post.hotLinkTitle || post.title}
               </button>
             ))}
           </div>

@@ -1,7 +1,7 @@
 # Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.npm-cache/
+jobportal-frontend/node_modules/
+jobportal-frontend/dist/
+jobportal-frontend/.npm-cache/
 
 # Backend
 backend/target/
@@ -14,3 +14,8 @@ backend/*.war
 .idea/
 *.class
 *.log
+
+# Root artifacts
+node_modules/
+dist/
+*.zip

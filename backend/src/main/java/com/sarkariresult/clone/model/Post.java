@@ -58,7 +58,25 @@ public class Post {
     @Column(columnDefinition = "integer default 0")
     private Integer views = 0;
 
+    @Column(name = "is_hot_link", columnDefinition = "boolean default false")
+    private Boolean isHotLink = false;
+
+    @Column(name = "hot_link_title")
+    private String hotLinkTitle;
+
+    @Column(name = "hot_link_order")
+    private Integer hotLinkOrder;
+
     public Post() {}
+
+    public Boolean getIsHotLink() { return isHotLink; }
+    public void setIsHotLink(Boolean isHotLink) { this.isHotLink = isHotLink; }
+
+    public String getHotLinkTitle() { return hotLinkTitle; }
+    public void setHotLinkTitle(String hotLinkTitle) { this.hotLinkTitle = hotLinkTitle; }
+
+    public Integer getHotLinkOrder() { return hotLinkOrder; }
+    public void setHotLinkOrder(Integer hotLinkOrder) { this.hotLinkOrder = hotLinkOrder; }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

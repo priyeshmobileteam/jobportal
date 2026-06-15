@@ -122,6 +122,81 @@ public class JobSyncScheduler {
                     break;
                 }
             }
+
+            // Scrape the job-grid (hot links)
+            System.out.println("Syncing hot links (job-grid) from sarkariresult.com...");
+            Elements jobGridLinks = doc.select("div.job-grid div.job-box a");
+            
+            // Clear current hot links flags
+            List<Post> currentHotLinks = postRepository.findByIsHotLinkTrue();
+            for (Post p : currentHotLinks) {
+                p.setIsHotLink(false);
+                p.setHotLinkTitle(null);
+                p.setHotLinkOrder(null);
+                postRepository.save(p);
+            }
+
+            int hotLinkOrder = 0;
+            for (Element a : jobGridLinks) {
+                String href = a.attr("abs:href");
+                String text = a.text().trim();
+                if (href.isEmpty() || text.isEmpty()) continue;
+
+                String cleanedTitle = cleanBranding(text);
+                // Try to find if this post already exists by matching URL
+                Optional<Post> postByUrlOpt = postRepository.findByOfficialWebsiteUrl(href);
+                Post post = null;
+                if (postByUrlOpt.isPresent()) {
+                    post = postByUrlOpt.get();
+                } else {
+                    Optional<Post> postByTitleOpt = postRepository.findByTitle(cleanedTitle);
+                    if (postByTitleOpt.isPresent()) {
+                        post = postByTitleOpt.get();
+                    }
+                }
+
+                if (post != null) {
+                    post.setIsHotLink(true);
+                    post.setHotLinkTitle(cleanedTitle);
+                    post.setHotLinkOrder(hotLinkOrder++);
+                    postRepository.save(post);
+                    System.out.println("Matched hot link: " + cleanedTitle + " to existing post: " + post.getTitle());
+                } else {
+                    // It's a new link from the hot links grid, let's scrape it!
+                    Category cat = Category.JOB; // default
+                    String lowerHref = href.toLowerCase();
+                    String lowerText = text.toLowerCase();
+                    if (lowerHref.contains("/admitcard/") || lowerText.contains("admit card") || lowerText.contains("admitcard")) {
+                        cat = Category.ADMIT_CARD;
+                    } else if (lowerHref.contains("/result/") || lowerText.contains("result")) {
+                        cat = Category.RESULT;
+                    } else if (lowerHref.contains("/answerkey/") || lowerText.contains("answer key")) {
+                        cat = Category.ANSWER_KEY;
+                    } else if (lowerHref.contains("/syllabus/") || lowerText.contains("syllabus")) {
+                        cat = Category.SYLLABUS;
+                    } else if (lowerHref.contains("/admission/") || lowerText.contains("admission")) {
+                        cat = Category.ADMISSION;
+                    }
+                    
+                    try {
+                        boolean success = parseAndSaveDetailPage(href, cleanedTitle, cat);
+                        if (success) {
+                            Optional<Post> newlySavedOpt = postRepository.findByOfficialWebsiteUrl(href);
+                            if (newlySavedOpt.isPresent()) {
+                                Post newlySaved = newlySavedOpt.get();
+                                newlySaved.setIsHotLink(true);
+                                newlySaved.setHotLinkTitle(cleanedTitle);
+                                newlySaved.setHotLinkOrder(hotLinkOrder++);
+                                postRepository.save(newlySaved);
+                                System.out.println("Scraped and saved new hot link: " + cleanedTitle);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Failed to parse hot link page " + href + ": " + e.getMessage());
+                    }
+                }
+            }
+
             System.out.println("Sync finished! Added " + count + " new posts.");
 
         } catch (Exception e) {

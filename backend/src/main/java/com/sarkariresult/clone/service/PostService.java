@@ -62,6 +62,8 @@ public class PostService {
                 grouped.put(category.name(), posts);
             }
         }
+        List<Post> hotLinks = postRepository.findByIsHotLinkTrueOrderByHotLinkOrderAsc();
+        grouped.put("HOT_LINKS", hotLinks);
         return grouped;
     }
 }

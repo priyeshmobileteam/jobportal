@@ -13,4 +13,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findAllByOrderByIdDesc();
     boolean existsByTitle(String title);
     Optional<Post> findByTitle(String title);
+    List<Post> findByIsHotLinkTrueOrderByHotLinkOrderAsc();
+    List<Post> findByIsHotLinkTrue();
+    Optional<Post> findByOfficialWebsiteUrl(String officialWebsiteUrl);
 }
