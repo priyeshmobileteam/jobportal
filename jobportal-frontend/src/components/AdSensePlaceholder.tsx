@@ -29,7 +29,7 @@ export const AdSensePlaceholder: React.FC<AdSensePlaceholderProps> = ({
 
   // Configurable Publisher ID helper (global)
   const [pubId, setPubIdState] = useState(() => {
-    return localStorage.getItem('adsense_pub_id') || 'ca-pub-9222595088627935';
+    return localStorage.getItem('adsense_pub_id') || 'ca-pub-XXXXXXXXXXXXXXXX';
   });
 
   // Numeric Slot ID helper (per-slot configuration)
