@@ -36,6 +36,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [activeTab, setActiveTab] = useState<'listings' | 'payments' | 'users'>('listings');
   const [payments, setPayments] = useState<any[]>([]);
@@ -694,6 +695,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 </div>
                 <span className="bg-slate-700 text-[10px] py-0.5 px-2 rounded">{posts.length} Total</span>
               </div>
+              <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3">
+                <input
+                  type="text"
+                  placeholder="🔍 Search posts by title or category..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-slate-800 text-xs bg-white text-slate-800"
+                />
+              </div>
 
               <div className="overflow-x-auto">
                 {loading ? (
@@ -710,13 +723,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {posts.length > 0 ? (
-                          (() => {
-                            const totalItems = posts.length;
+                        {(() => {
+                          const filteredPosts = posts.filter(post => 
+                            post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            post.category.toLowerCase().includes(searchTerm.toLowerCase())
+                          );
+
+                          if (filteredPosts.length > 0) {
+                            const totalItems = filteredPosts.length;
                             const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
                             const activePage = Math.min(currentPage, totalPages);
                             const startIndex = (activePage - 1) * itemsPerPage;
-                            const paginatedPosts = posts.slice(startIndex, startIndex + itemsPerPage);
+                            const paginatedPosts = filteredPosts.slice(startIndex, startIndex + itemsPerPage);
 
                             return paginatedPosts.map(post => (
                               <tr key={post.id} className="hover:bg-slate-50">
@@ -753,21 +771,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                 </td>
                               </tr>
                             ));
-                          })()
-                        ) : (
-                          <tr>
-                            <td colSpan={4} className="p-6 text-center text-slate-400">No vacancies saved in database. Run scraper above to populate.</td>
-                          </tr>
-                        )}
+                          } else {
+                            return (
+                              <tr>
+                                <td colSpan={4} className="p-6 text-center text-slate-400">No vacancies match your search term or database is empty.</td>
+                              </tr>
+                            );
+                          }
+                        })()}
                       </tbody>
                     </table>
 
                     {/* Pagination Controls */}
-                    {posts.length > 0 && (() => {
-                      const totalItems = posts.length;
-                      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-                      const activePage = Math.min(currentPage, totalPages);
-                      const startIndex = (activePage - 1) * itemsPerPage;
+                    {(() => {
+                      const filteredPosts = posts.filter(post => 
+                        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        post.category.toLowerCase().includes(searchTerm.toLowerCase())
+                      );
+                      const totalItems = filteredPosts.length;
+                      if (totalItems > 0) {
+                        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+                        const activePage = Math.min(currentPage, totalPages);
+                        const startIndex = (activePage - 1) * itemsPerPage;
 
                       return (
                         <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
@@ -840,6 +865,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                           </div>
                         </div>
                       );
+                      }
+                      return null;
                     })()}
                   </>
                 )}
