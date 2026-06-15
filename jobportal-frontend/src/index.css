@@ -218,4 +218,69 @@
   color: #60a5fa !important;
 }
 
+/* ==========================================================================
+   5 Themes Accent Colors Config
+   ========================================================================== */
+:root {
+  --theme-primary: #1e3a8a;       /* Default Blue */
+  --theme-primary-hover: #172554;
+  --theme-accent: #3b82f6;
+}
+
+.theme-blue {
+  --theme-primary: #1e3a8a;
+  --theme-primary-hover: #172554;
+  --theme-accent: #3b82f6;
+}
+.theme-green {
+  --theme-primary: #047857;
+  --theme-primary-hover: #064e3b;
+  --theme-accent: #10b981;
+}
+.theme-purple {
+  --theme-primary: #6d28d9;
+  --theme-primary-hover: #4c1d95;
+  --theme-accent: #8b5cf6;
+}
+.theme-orange {
+  --theme-primary: #b45309;
+  --theme-primary-hover: #78350f;
+  --theme-accent: #f59e0b;
+}
+.theme-red {
+  --theme-primary: #991b1b;
+  --theme-primary-hover: #7f1d1d;
+  --theme-accent: #ef4444;
+}
+
+/* Map existing primary blue classes to CSS theme variables */
+.bg-blue-900, 
+nav.bg-blue-900, 
+header .bg-blue-900,
+button.bg-blue-900 {
+  background-color: var(--theme-primary) !important;
+}
+
+.hover\:bg-blue-950:hover, 
+.hover\:bg-blue-800:hover,
+button.bg-blue-900:hover {
+  background-color: var(--theme-primary-hover) !important;
+}
+
+.text-blue-900,
+.text-blue-700 {
+  color: var(--theme-primary) !important;
+}
+
+/* Text Size adjustments */
+body.size-small {
+  font-size: 13px !important;
+}
+body.size-normal {
+  font-size: 15px !important;
+}
+body.size-large {
+  font-size: 17px !important;
+}
+
 
