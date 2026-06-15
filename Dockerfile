@@ -1,9 +1,9 @@
 # Stage 1: Build the React frontend
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
-COPY frontend/package*.json ./
+COPY jobportal-frontend/package*.json ./
 RUN npm install
-COPY frontend/ ./
+COPY jobportal-frontend/ ./
 RUN npm run build
 
 # Stage 2: Build the Spring Boot backend
