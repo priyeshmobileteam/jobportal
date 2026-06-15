@@ -16,7 +16,7 @@ public class PostService {
     private PostRepository postRepository;
 
     public List<Post> getAllPosts() {
-        return postRepository.findAll();
+        return postRepository.findAllByOrderByIdDesc();
     }
 
     public List<Post> getPostsByCategory(Category category) {

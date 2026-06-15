@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByCategoryOrderByLastUpdateDateDesc(Category category);
+    List<Post> findAllByOrderByIdDesc();
     boolean existsByTitle(String title);
     Optional<Post> findByTitle(String title);
 }
