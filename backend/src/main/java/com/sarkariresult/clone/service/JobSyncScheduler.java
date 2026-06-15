@@ -102,10 +102,10 @@ public class JobSyncScheduler {
                             System.out.println("Updating category for post '" + cleanedTitle + "' from " + existingPost.getCategory() + " to " + category);
                             existingPost.setCategory(category);
                         }
-                        postRepository.save(existingPost);
-                        Thread.sleep(30);
+                        parseAndSaveDetailPage(href, cleanedTitle, category, existingPost);
+                        Thread.sleep(150);
                     } else {
-                        boolean success = parseAndSaveDetailPage(href, cleanedTitle, category);
+                        boolean success = parseAndSaveDetailPage(href, cleanedTitle, category, null);
                         if (success) {
                             count++;
                             // Short delay between crawls to prevent rate-limiting
@@ -159,8 +159,9 @@ public class JobSyncScheduler {
                     post.setIsHotLink(true);
                     post.setHotLinkTitle(cleanedTitle);
                     post.setHotLinkOrder(hotLinkOrder++);
-                    postRepository.save(post);
-                    System.out.println("Matched hot link: " + cleanedTitle + " to existing post: " + post.getTitle());
+                    parseAndSaveDetailPage(href, cleanedTitle, post.getCategory() != null ? post.getCategory() : Category.JOB, post);
+                    System.out.println("Matched and updated hot link: " + cleanedTitle + " to existing post: " + post.getTitle());
+                    Thread.sleep(150);
                 } else {
                     // It's a new link from the hot links grid, let's scrape it!
                     Category cat = Category.JOB; // default
@@ -179,7 +180,7 @@ public class JobSyncScheduler {
                     }
                     
                     try {
-                        boolean success = parseAndSaveDetailPage(href, cleanedTitle, cat);
+                        boolean success = parseAndSaveDetailPage(href, cleanedTitle, cat, null);
                         if (success) {
                             Optional<Post> newlySavedOpt = postRepository.findByOfficialWebsiteUrl(href);
                             if (newlySavedOpt.isPresent()) {
@@ -204,14 +205,16 @@ public class JobSyncScheduler {
         }
     }
 
-    private boolean parseAndSaveDetailPage(String url, String title, Category category) {
+    private boolean parseAndSaveDetailPage(String url, String title, Category category, Post existingPost) {
         try {
             // Direct save for external/non-sarkari links
             if (!url.contains("sarkariresult.com")) {
-                Post post = new Post();
+                Post post = existingPost != null ? existingPost : new Post();
                 post.setTitle(cleanBranding(title));
                 post.setCategory(category);
-                post.setPostDate(LocalDateTime.now());
+                if (existingPost == null) {
+                    post.setPostDate(LocalDateTime.now());
+                }
                 post.setLastUpdateDate(LocalDateTime.now());
                 post.setOfficialWebsiteUrl(url);
                 post.setApplyOnlineUrl(url);
@@ -225,10 +228,12 @@ public class JobSyncScheduler {
                     .timeout(10000)
                     .get();
 
-            Post post = new Post();
+            Post post = existingPost != null ? existingPost : new Post();
             post.setTitle(cleanBranding(title));
             post.setCategory(category);
-            post.setPostDate(LocalDateTime.now());
+            if (existingPost == null) {
+                post.setPostDate(LocalDateTime.now());
+            }
             post.setLastUpdateDate(LocalDateTime.now());
             post.setOfficialWebsiteUrl(url);
 
@@ -317,10 +322,18 @@ public class JobSyncScheduler {
                     Elements cells = row.select("td");
                     for (Element cell : cells) {
                         String textVal = cell.text();
-                        if (textVal.toLowerCase().contains("total") && textVal.replaceAll("[^0-9]", "").length() > 0) {
+                        if (textVal.toLowerCase().contains("total")) {
                             try {
-                                String cleanNum = textVal.replaceAll("[^0-9]", "");
-                                post.setTotalPosts(Integer.parseInt(cleanNum));
+                                java.util.regex.Pattern totalPattern = java.util.regex.Pattern.compile("(?i)total[a-zA-Z\\s]*:?\\s*(\\d+)");
+                                java.util.regex.Matcher m = totalPattern.matcher(textVal);
+                                if (m.find()) {
+                                    post.setTotalPosts(Integer.parseInt(m.group(1)));
+                                } else {
+                                    String cleanNum = textVal.replaceAll("[^0-9]", "");
+                                    if (!cleanNum.isEmpty()) {
+                                        post.setTotalPosts(Integer.parseInt(cleanNum));
+                                    }
+                                }
                             } catch (Exception ignored) {}
                         }
                     }
