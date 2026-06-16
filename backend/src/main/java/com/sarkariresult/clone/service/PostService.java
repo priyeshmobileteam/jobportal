@@ -51,6 +51,11 @@ public class PostService {
         postRepository.deleteById(id);
     }
 
+    @Transactional
+    public void deleteAllPosts() {
+        postRepository.deleteAll();
+    }
+
     public Map<String, List<Post>> getHomepagePosts() {
         Map<String, List<Post>> grouped = new HashMap<>();
         for (Category category : Category.values()) {

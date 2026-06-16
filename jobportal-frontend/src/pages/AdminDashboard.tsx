@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft, CreditCard, Users } from 'lucide-react';
+import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft, CreditCard, Users, UploadCloud, FolderOpen, AlertTriangle } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (window.location.port === '5173' ? 'http://localhost:8085' : 'https://nokri-online.onrender.com');
@@ -23,6 +23,13 @@ interface Post {
   views: number;
 }
 
+interface UploadedPdf {
+  id: number;
+  name: string;
+  url: string;
+  uploadedAt: string;
+}
+
 interface AdminDashboardProps {
   onBack: () => void;
 }
@@ -38,12 +45,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [syncMessage, setSyncMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'listings' | 'payments' | 'users'>('listings');
+  const [activeTab, setActiveTab] = useState<'listings' | 'payments' | 'users' | 'pdfs'>('listings');
   const [payments, setPayments] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // PDF Document uploads state
+  const [pdfs, setPdfs] = useState<UploadedPdf[]>([]);
+  const [loadingPdfs, setLoadingPdfs] = useState(false);
+  const [uploadName, setUploadName] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+
+  // Dynamic URL Scraper state
+  const [fetchUrlVal, setFetchUrlVal] = useState('');
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [fetchMessage, setFetchMessage] = useState('');
+
+  // Smart text-area parser state
+  const [rawPasteText, setRawPasteText] = useState('');
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,6 +94,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       fetchPosts();
       fetchPayments();
       fetchUsers();
+      fetchPdfs();
       // Fetch stats to get current ads enabled status
       fetch(`${API_BASE_URL}/api/posts/stats`)
         .then(res => res.json())
@@ -142,6 +165,184 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         console.error(err);
         setLoadingUsers(false);
       });
+  };
+
+  const fetchPdfs = () => {
+    setLoadingPdfs(true);
+    fetch(`${API_BASE_URL}/api/admin/posts/list-pdfs`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setPdfs(data);
+        setLoadingPdfs(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoadingPdfs(false);
+      });
+  };
+
+  const handleUploadPdf = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile || !uploadName.trim()) {
+      alert("Please enter a custom name and select a PDF file first.");
+      return;
+    }
+    setUploadingPdf(true);
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("name", uploadName);
+
+    fetch(`${API_BASE_URL}/api/admin/posts/upload-pdf`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Upload failed");
+        return res.json();
+      })
+      .then(() => {
+        setUploadName('');
+        setSelectedFile(null);
+        const fileInput = document.getElementById('pdf-file-input') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        setUploadingPdf(false);
+        fetchPdfs();
+        alert("PDF uploaded successfully!");
+      })
+      .catch(err => {
+        alert(err.message);
+        setUploadingPdf(false);
+      });
+  };
+
+  const handleFetchFromUrl = () => {
+    if (!fetchUrlVal.trim()) {
+      alert("Please enter a valid URL.");
+      return;
+    }
+    setFetchingUrl(true);
+    setFetchMessage('Fetching and parsing page...');
+    fetch(`${API_BASE_URL}/api/admin/posts/fetch-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ url: fetchUrlVal })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch data from URL.");
+        return res.json();
+      })
+      .then((data: Post) => {
+        setTitle(data.title || '');
+        setShortInfo(data.shortInfo || '');
+        setTotalPosts(data.totalPosts || 0);
+        setStartDate(data.applicationStartDate || '');
+        setEndDate(data.applicationEndDate || '');
+        setFeeDetails(data.feeDetails || '');
+        setAgeLimits(data.ageLimits || '');
+        setVacancyDetails(data.vacancyDetails || '');
+        setNotifUrl(data.officialNotificationUrl || '');
+        setApplyUrl(data.applyOnlineUrl || '');
+        setWebUrl(data.officialWebsiteUrl || '');
+        setFetchingUrl(false);
+        setFetchMessage('Success! Form fields auto-filled.');
+        setTimeout(() => setFetchMessage(''), 3000);
+      })
+      .catch(err => {
+        alert(err.message);
+        setFetchingUrl(false);
+        setFetchMessage('Failed to parse URL.');
+      });
+  };
+
+  const parseRegexDate = (dateStr: string) => {
+    const parts = dateStr.split(/[/-]/);
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+    return null;
+  };
+
+  const handleParsePasteText = () => {
+    if (!rawPasteText.trim()) {
+      alert("Please paste some text first.");
+      return;
+    }
+
+    const text = rawPasteText;
+
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length > 0 && !title) {
+      setTitle(lines[0]);
+    }
+
+    const totalMatch = text.match(/(?:total|vacancy|post|vacancy details)\s*(?:post|vacancy)?\s*:\s*(\d+)/i);
+    if (totalMatch) {
+      setTotalPosts(Number(totalMatch[1]));
+    }
+
+    const beginMatch = text.match(/(?:application begin|start date)\s*:\s*(\d{2}[/-]\d{2}[/-]\d{4})/i);
+    if (beginMatch) {
+      const d = parseRegexDate(beginMatch[1]);
+      if (d) setStartDate(d);
+    }
+    const endMatch = text.match(/(?:last date for apply|last date|end date)\s*:\s*(\d{2}[/-]\d{2}[/-]\d{4})/i);
+    if (endMatch) {
+      const d = parseRegexDate(endMatch[1]);
+      if (d) setEndDate(d);
+    }
+
+    const feeMap: Record<string, string> = {};
+    const genFeeMatch = text.match(/(?:general|obc|ews)\s*:\s*([\d\/\-\s\w]+)/i);
+    if (genFeeMatch) feeMap["General / OBC / EWS"] = genFeeMatch[1].trim();
+    const scFeeMatch = text.match(/(?:sc\s*\/\s*st|sc|st|ph)\s*:\s*([\d\/\-\s\w]+)/i);
+    if (scFeeMatch) feeMap["SC / ST / PH"] = scFeeMatch[1].trim();
+    if (Object.keys(feeMap).length > 0) {
+      setFeeDetails(JSON.stringify(feeMap, null, 2));
+    }
+
+    const ageMap: Record<string, string> = {};
+    const minAgeMatch = text.match(/(?:minimum age|min age)\s*:\s*([\d\/\-\s\w]+)/i);
+    if (minAgeMatch) ageMap["Minimum Age"] = minAgeMatch[1].trim();
+    const maxAgeMatch = text.match(/(?:maximum age|max age)\s*:\s*([\d\/\-\s\w]+)/i);
+    if (maxAgeMatch) ageMap["Maximum Age"] = maxAgeMatch[1].trim();
+    if (Object.keys(ageMap).length > 0) {
+      setAgeLimits(JSON.stringify(ageMap, null, 2));
+    }
+
+    alert("Text analyzed and fields auto-filled!");
+  };
+
+  const handleClearAllPosts = () => {
+    if (!window.confirm('WARNING: Are you absolutely sure you want to delete ALL posts from the database? This cannot be undone!')) return;
+    if (window.prompt('FINAL CONFIRMATION: Type "DELETE ALL" to wipe all posts.') !== "DELETE ALL") {
+      alert("Confirmation failed. Cancelled.");
+      return;
+    }
+
+    fetch(`${API_BASE_URL}/api/admin/posts/clear-all`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to delete posts');
+        return res.json();
+      })
+      .then(data => {
+        alert(data.message);
+        fetchPosts();
+      })
+      .catch(err => alert(err.message));
   };
 
   const handleToggleUserRole = (userId: number) => {
@@ -440,6 +641,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
               <span>{isEditing ? 'Modify Vacancy Post' : 'Add New Vacancy Post'}</span>
             </h2>
 
+            {/* Auxiliary Tools for quick input */}
+            <div className="mb-5 p-3.5 bg-blue-50/50 border border-blue-200 rounded-lg text-left">
+              <div className="font-bold text-blue-950 text-xs mb-1.5 flex items-center gap-1">
+                <span>🔗 यूआरएल से डेटा लाएं (Fetch from URL)</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="SarkariResult URL पेस्ट करें (e.g., https://...)"
+                  value={fetchUrlVal}
+                  onChange={(e) => setFetchUrlVal(e.target.value)}
+                  className="flex-1 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleFetchFromUrl}
+                  disabled={fetchingUrl}
+                  className="bg-blue-900 hover:bg-blue-950 text-white font-bold px-3 py-1.5 rounded text-xs transition-colors cursor-pointer"
+                >
+                  {fetchingUrl ? 'Fetching...' : 'Fetch'}
+                </button>
+              </div>
+              {fetchMessage && <p className="text-[10px] text-emerald-700 font-bold mt-1 animate-pulse">{fetchMessage}</p>}
+            </div>
+
+            <div className="mb-5 p-3.5 bg-purple-50/50 border border-purple-200 rounded-lg text-left">
+              <div className="font-bold text-purple-950 text-xs mb-1 flex items-center gap-1">
+                <span>📝 स्मार्ट कॉपी-पेस्ट विश्लेषण (Smart Parse Text)</span>
+              </div>
+              <p className="text-[10px] text-slate-500 mb-1.5">विज्ञापन विवरणों का पाठ (text) नीचे चिपकाएं और विश्लेषण करें:</p>
+              <textarea
+                placeholder="यहाँ टेक्स्ट पेस्ट करें (उदा. Application Begin: 10/10/2026 ...)"
+                value={rawPasteText}
+                onChange={(e) => setRawPasteText(e.target.value)}
+                rows={3}
+                className="w-full px-2 py-1.5 border border-slate-300 rounded text-xs bg-white focus:outline-none font-sans mb-2"
+              />
+              <button
+                type="button"
+                onClick={handleParsePasteText}
+                className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-1.5 rounded text-xs transition-colors cursor-pointer"
+              >
+                विश्लेषण करें (Analyze Text)
+              </button>
+            </div>
+
             <form onSubmit={handleCreateOrUpdate} className="space-y-4 text-xs font-sans">
               <div>
                 <label className="block font-bold text-slate-600 mb-1">Job Post Title</label>
@@ -542,29 +789,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="block font-bold text-slate-600">Action URLs</label>
-                <input
-                  type="text"
-                  value={applyUrl}
-                  onChange={(e) => setApplyUrl(e.target.value)}
-                  className="w-full px-3 py-2 border rounded text-xs"
-                  placeholder="Apply Online URL"
-                />
-                <input
-                  type="text"
-                  value={notifUrl}
-                  onChange={(e) => setNotifUrl(e.target.value)}
-                  className="w-full px-3 py-2 border rounded text-xs"
-                  placeholder="Notification Download URL"
-                />
-                <input
-                  type="text"
-                  value={webUrl}
-                  onChange={(e) => setWebUrl(e.target.value)}
-                  className="w-full px-3 py-2 border rounded text-xs"
-                  placeholder="Official Gov Website URL"
-                />
+              <div className="space-y-4 border-t pt-4 text-left">
+                <label className="block font-bold text-slate-700 text-xs uppercase tracking-wider">Action URLs & Attachments</label>
+                
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1">Apply Online URL</label>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) setApplyUrl(e.target.value);
+                    }}
+                    className="w-full px-2 py-1.5 border rounded text-xs mb-1.5 bg-slate-50 focus:ring-1 focus:ring-blue-900 cursor-pointer"
+                  >
+                    <option value="">-- Select Uploaded PDF --</option>
+                    {pdfs.map(pdf => (
+                      <option key={pdf.id} value={`${API_BASE_URL}${pdf.url}`}>{pdf.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={applyUrl}
+                    onChange={(e) => setApplyUrl(e.target.value)}
+                    className="w-full px-3 py-2 border rounded text-xs"
+                    placeholder="Or paste custom Apply URL manually..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1">Notification Download URL</label>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) setNotifUrl(e.target.value);
+                    }}
+                    className="w-full px-2 py-1.5 border rounded text-xs mb-1.5 bg-slate-50 focus:ring-1 focus:ring-blue-900 cursor-pointer"
+                  >
+                    <option value="">-- Select Uploaded PDF --</option>
+                    {pdfs.map(pdf => (
+                      <option key={pdf.id} value={`${API_BASE_URL}${pdf.url}`}>{pdf.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={notifUrl}
+                    onChange={(e) => setNotifUrl(e.target.value)}
+                    className="w-full px-3 py-2 border rounded text-xs"
+                    placeholder="Or paste custom Notification URL manually..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1">Official Gov Website URL</label>
+                  <input
+                    type="text"
+                    value={webUrl}
+                    onChange={(e) => setWebUrl(e.target.value)}
+                    className="w-full px-3 py-2 border rounded text-xs"
+                    placeholder="Official Gov Website URL"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -661,27 +942,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex bg-slate-200 p-1.5 rounded-lg border border-slate-300 gap-1 my-2">
+          <div className="flex bg-slate-200 p-1.5 rounded-lg border border-slate-300 gap-1 my-2 flex-wrap">
             <button
               type="button"
               onClick={() => setActiveTab('listings')}
-              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${activeTab === 'listings' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all min-w-[120px] ${activeTab === 'listings' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <BarChart3 size={14} /> Listings & Traffic
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('payments')}
-              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${activeTab === 'payments' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all min-w-[120px] ${activeTab === 'payments' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
             >
-              <CreditCard size={14} /> Payment Logs (Done Details)
+              <CreditCard size={14} /> Payment Logs
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('users')}
-              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${activeTab === 'users' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all min-w-[120px] ${activeTab === 'users' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
             >
-              <Users size={14} /> Manage Users (Ad-Free)
+              <Users size={14} /> Manage Users
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('pdfs')}
+              className={`flex-1 py-2 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all min-w-[120px] ${activeTab === 'pdfs' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <UploadCloud size={14} /> Upload & Manage PDFs
             </button>
           </div>
 
@@ -1017,6 +1305,114 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
               </div>
             </div>
           )}
+
+          {/* PDF Files Manager Tab */}
+          {activeTab === 'pdfs' && (
+            <div className="bg-white border border-slate-200 rounded-lg shadow p-5 text-left">
+              <div className="bg-slate-800 text-white font-bold py-3 px-4 text-sm flex justify-between items-center rounded-t-lg -mx-5 -mt-5 mb-4">
+                <div className="flex items-center gap-2">
+                  <FolderOpen size={16} />
+                  <span>PDF Document Upload Manager</span>
+                </div>
+                <span className="bg-emerald-700 text-[10px] py-0.5 px-2 rounded font-bold font-mono">
+                  {pdfs.length} Files
+                </span>
+              </div>
+
+              <form onSubmit={handleUploadPdf} className="space-y-4 text-xs mb-6 bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                <div className="font-bold text-slate-700 mb-1">Upload New PDF Document</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">Custom Display Name (नाम दर्ज करें)</label>
+                    <input
+                      type="text"
+                      required
+                      value={uploadName}
+                      onChange={(e) => setUploadName(e.target.value)}
+                      className="w-full px-3 py-2 border rounded text-xs bg-white focus:outline-none"
+                      placeholder="e.g. UPSC Prelims 2026 Notification"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">Select PDF File</label>
+                    <input
+                      id="pdf-file-input"
+                      type="file"
+                      accept=".pdf"
+                      required
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          setSelectedFile(e.target.files[0]);
+                        }
+                      }}
+                      className="w-full px-2 py-1.5 border rounded text-xs bg-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={uploadingPdf}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded text-xs transition-colors shadow disabled:opacity-50 cursor-pointer flex items-center gap-1"
+                >
+                  <UploadCloud size={14} /> {uploadingPdf ? 'Uploading...' : 'Upload & Save PDF'}
+                </button>
+              </form>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold">
+                      <th className="p-3">Display Name</th>
+                      <th className="p-3">URL / Link</th>
+                      <th className="p-3 text-center">Uploaded Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {loadingPdfs ? (
+                      <tr>
+                        <td colSpan={3} className="p-8 text-center text-slate-500">Loading PDFs...</td>
+                      </tr>
+                    ) : pdfs.length > 0 ? (
+                      pdfs.map(pdf => (
+                        <tr key={pdf.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-semibold text-slate-800">{pdf.name}</td>
+                          <td className="p-3 font-mono text-slate-500 max-w-[250px] truncate">
+                            <a href={`${API_BASE_URL}${pdf.url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                              {pdf.url}
+                            </a>
+                          </td>
+                          <td className="p-3 text-center text-slate-400">
+                            {new Date(pdf.uploadedAt).toLocaleDateString('en-IN')}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="p-8 text-center text-slate-400">No PDFs uploaded yet. Use the upload box above.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Danger Zone: Clear all posts */}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-5 text-left shadow-sm mt-4">
+            <h3 className="font-extrabold text-red-900 text-sm flex items-center gap-2">
+              <AlertTriangle size={16} />
+              <span>Danger Zone (डेटाबेस रीसेट)</span>
+            </h3>
+            <p className="text-xs text-slate-600 mt-1 mb-3">
+              Delete all job posts from the database to start fresh with clean manual entries.
+            </p>
+            <button
+              onClick={handleClearAllPosts}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded shadow-md transition-all flex items-center gap-1.5 whitespace-nowrap hover:scale-102 cursor-pointer"
+            >
+              <Trash2 size={14} /> Clear All Posts
+            </button>
+          </div>
         </section>
 
       </div>

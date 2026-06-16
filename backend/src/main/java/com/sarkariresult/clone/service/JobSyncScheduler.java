@@ -505,4 +505,202 @@ public class JobSyncScheduler {
         sb.append("}");
         return sb.toString();
     }
+
+    public Post scrapeUrlAndReturnData(String url) {
+        try {
+            if (!url.contains("sarkariresult.com")) {
+                Post post = new Post();
+                post.setOfficialWebsiteUrl(url);
+                post.setApplyOnlineUrl(url);
+                post.setShortInfo("Direct link to official portal: " + url);
+                return post;
+            }
+
+            Document detailDoc = Jsoup.connect(url)
+                    .userAgent(USER_AGENT)
+                    .timeout(10000)
+                    .get();
+
+            Post post = new Post();
+            post.setOfficialWebsiteUrl(url);
+
+            String pageTitle = detailDoc.title();
+            Element titleEl = detailDoc.select("h1").first();
+            if (titleEl != null) {
+                pageTitle = titleEl.text();
+            }
+            post.setTitle(cleanBranding(pageTitle));
+
+            Element shortInfoEl = detailDoc.select("td:contains(Short Information)").first();
+            if (shortInfoEl != null) {
+                post.setShortInfo(cleanBranding(shortInfoEl.text().replace("Short Information :", "").trim()));
+            } else {
+                post.setShortInfo(cleanBranding("Details of vacancy notification for " + pageTitle));
+            }
+
+            Elements rows = detailDoc.select("tr");
+
+            Map<String, String> fees = new LinkedHashMap<>();
+            Map<String, String> age = new LinkedHashMap<>();
+
+            for (Element row : rows) {
+                String rowText = row.text().toLowerCase();
+
+                if (rowText.contains("important dates") || rowText.contains("application fee")) {
+                    Elements cells = row.select("td");
+                    for (Element cell : cells) {
+                        String cellText = getElementTextWithNewlines(cell);
+                        if (cellText.contains("Application Begin") || cellText.contains("Last Date")) {
+                            String[] lines = cellText.split("\n");
+                            for (String line : lines) {
+                                line = line.trim();
+                                if (line.contains("Application Begin") && line.contains(":")) {
+                                    String dateStr = line.split(":", 2)[1].trim();
+                                    post.setApplicationStartDate(tryParseDate(dateStr));
+                                }
+                                if (line.contains("Last Date") && line.contains("Apply") && line.contains(":")) {
+                                    String dateStr = line.split(":", 2)[1].trim();
+                                    post.setApplicationEndDate(tryParseDate(dateStr));
+                                }
+                            }
+                        }
+                        if (cellText.contains("General") || cellText.contains("SC / ST") || cellText.contains("OBC")) {
+                            String[] lines = cellText.split("\n");
+                            for (String line : lines) {
+                                line = line.trim();
+                                if (line.contains(":")) {
+                                    String[] parts = line.split(":", 2);
+                                    if (parts[0].trim().length() > 0 && parts[1].trim().length() > 0) {
+                                        fees.put(parts[0].trim(), parts[1].trim());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (rowText.contains("age limit")) {
+                    Elements cells = row.select("td");
+                    for (Element cell : cells) {
+                        String cellText = getElementTextWithNewlines(cell);
+                        if (cellText.contains("Minimum") || cellText.contains("Maximum") || cellText.contains("Min") || cellText.contains("Max")) {
+                            String[] lines = cellText.split("\n");
+                            for (String line : lines) {
+                                line = line.trim();
+                                if (line.contains("Min") || line.contains("Max") || line.contains("Age") || line.contains("Minimum") || line.contains("Maximum")) {
+                                    if (line.contains(":")) {
+                                        String[] parts = line.split(":", 2);
+                                        if (parts[0].trim().length() > 0 && parts[1].trim().length() > 0) {
+                                            age.put(parts[0].trim(), parts[1].trim());
+                                        }
+                                    } else {
+                                        if (line.length() > 3 && !line.toLowerCase().contains("age limit as on")) {
+                                            age.put("Details", line.trim());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (rowText.contains("total post") || rowText.contains("vacancy details")) {
+                    Elements cells = row.select("td");
+                    for (Element cell : cells) {
+                        String textVal = cell.text();
+                        if (textVal.toLowerCase().contains("total")) {
+                            try {
+                                java.util.regex.Pattern totalPattern = java.util.regex.Pattern.compile("(?i)total[a-zA-Z\\s]*:?\\s*(\\d+)");
+                                java.util.regex.Matcher m = totalPattern.matcher(textVal);
+                                if (m.find()) {
+                                    post.setTotalPosts(Integer.parseInt(m.group(1)));
+                                } else {
+                                    String cleanNum = textVal.replaceAll("[^0-9]", "");
+                                    if (!cleanNum.isEmpty()) {
+                                        post.setTotalPosts(Integer.parseInt(cleanNum));
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                }
+            }
+
+            if (fees.isEmpty()) {
+                fees.put("General / OBC / EWS", "Refer to Notification");
+                fees.put("SC / ST / PH", "Refer to Notification");
+            }
+            if (age.isEmpty()) {
+                age.put("Age Limit Details", "Read official notification details.");
+            }
+
+            Elements vacancyTables = detailDoc.select("table:contains(Post Name)");
+            if (!vacancyTables.isEmpty()) {
+                Element vacTable = vacancyTables.first().clone();
+                Elements tableLinks = vacTable.select("a");
+                for (Element tl : tableLinks) {
+                    String href = tl.attr("href");
+                    String text = tl.text().toLowerCase();
+                    String lowerHref = href != null ? href.toLowerCase() : "";
+
+                    boolean isTg = text.contains("telegram") || lowerHref.contains("t.me") || lowerHref.contains("telegram");
+                    boolean isWa = text.contains("whatsapp") || lowerHref.contains("whatsapp.com") || lowerHref.contains("chat.whatsapp.com");
+                    boolean isGen = text.contains("join") || text.contains("channel");
+
+                    if (isTg || isWa || isGen) {
+                        String targetUrl = isTg ? "https://t.me/boost/nokriin" : "https://whatsapp.com/channel/0029Vb8NM1a5q08aX2ej0r04";
+                        tl.attr("href", targetUrl);
+                        tl.attr("target", "_blank");
+                        tl.removeAttr("onclick");
+                        continue;
+                    }
+
+                    if (href != null && (href.toLowerCase().contains("sarkariresult") || href.startsWith("/") || href.startsWith("."))) {
+                        tl.attr("href", "#");
+                        tl.attr("onclick", "event.preventDefault(); return false;");
+                        tl.removeAttr("target");
+                    }
+                }
+                post.setVacancyDetails(cleanBranding(vacTable.outerHtml()));
+            } else {
+                post.setVacancyDetails(cleanBranding("<p>Refer to official notification details for vacancy breakdown.</p>"));
+            }
+
+            post.setFeeDetails(cleanBranding(serializeMap(fees)));
+            post.setAgeLimits(cleanBranding(serializeMap(age)));
+
+            Elements detailLinks = detailDoc.select("a");
+            for (Element dl : detailLinks) {
+                String linkHref = dl.attr("abs:href");
+                String linkText = dl.text().toLowerCase();
+
+                if (linkHref != null && (linkHref.toLowerCase().contains("sarkariresult") || linkHref.startsWith("/") || linkHref.startsWith("."))) {
+                    continue;
+                }
+
+                if (linkText.contains("apply online") || linkText.contains("click here") && dl.parent().text().toLowerCase().contains("apply online")) {
+                    post.setApplyOnlineUrl(linkHref);
+                } else if (linkText.contains("download notification") || linkText.contains("click here") && dl.parent().text().toLowerCase().contains("notification")) {
+                    post.setOfficialNotificationUrl(linkHref);
+                } else if (linkText.contains("official website") || linkText.contains("click here") && dl.parent().text().toLowerCase().contains("website")) {
+                    post.setOfficialWebsiteUrl(linkHref);
+                }
+            }
+
+            if (post.getApplyOnlineUrl() == null || post.getApplyOnlineUrl().toLowerCase().contains("sarkariresult")) {
+                post.setApplyOnlineUrl("");
+            }
+            if (post.getOfficialNotificationUrl() == null || post.getOfficialNotificationUrl().toLowerCase().contains("sarkariresult")) {
+                post.setOfficialNotificationUrl("");
+            }
+            if (post.getOfficialWebsiteUrl() == null || post.getOfficialWebsiteUrl().toLowerCase().contains("sarkariresult")) {
+                post.setOfficialWebsiteUrl("https://www.google.com");
+            }
+
+            return post;
+        } catch (Exception e) {
+            System.err.println("Error parsing URL: " + e.getMessage());
+        }
+        return null;
+    }
 }
