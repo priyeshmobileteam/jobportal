@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft, CreditCard, Users, UploadCloud, FolderOpen, AlertTriangle } from 'lucide-react';
+import { LogOut, Plus, Trash2, Edit, RefreshCw, Key, ShieldCheck, BarChart3, ArrowLeft, CreditCard, Users, UploadCloud, FolderOpen, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (window.location.port === '5173' ? 'http://localhost:8085' : 'https://nokri-online.onrender.com');
@@ -38,6 +38,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [token, setToken] = useState<string>(localStorage.getItem('admin_token') || '');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -573,14 +574,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-900 text-sm"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-3 pr-10 py-2 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-900 text-sm"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 focus:outline-none cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             {authError && <p className="text-xs text-red-600 font-semibold text-center">{authError}</p>}
