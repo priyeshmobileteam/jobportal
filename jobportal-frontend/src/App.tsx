@@ -168,7 +168,7 @@ function App() {
       {/* Generic Premium Progress Bar */}
       {progress > 0 && (
         <div 
-          className="fixed top-0 left-0 h-[3px] z-[999999] bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 dark:from-yellow-400 dark:via-amber-500 dark:to-orange-500 shadow-[0_0_12px_rgba(59,130,246,0.8)] dark:shadow-[0_0_12px_rgba(245,158,11,0.9)] transition-all duration-300 ease-out"
+          className="fixed top-0 left-0 h-[4px] z-[999999] bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 dark:from-yellow-400 dark:via-amber-500 dark:to-orange-500 shadow-[0_0_12px_rgba(59,130,246,0.8)] dark:shadow-[0_0_12px_rgba(245,158,11,0.9)] transition-all duration-300 ease-out premium-loading-bar"
           style={{ width: `${progress}%` }}
         />
       )}

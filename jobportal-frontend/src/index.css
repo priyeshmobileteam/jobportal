@@ -283,4 +283,16 @@ body.size-large {
   font-size: 17px !important;
 }
 
+/* Generic Premium Progress Bar Shimmer Effect */
+@keyframes loading-bar-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.premium-loading-bar {
+  background-size: 200% 200%;
+  animation: loading-bar-shimmer 2s linear infinite;
+}
+
 
