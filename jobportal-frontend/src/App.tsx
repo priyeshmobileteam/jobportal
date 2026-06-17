@@ -11,6 +11,7 @@ type TextSize = 'small' | 'normal' | 'large';
 function App() {
   const [page, setPage] = useState<PageState>('home');
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
 
   // Settings States
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -26,6 +27,47 @@ function App() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     return localStorage.getItem('soundEnabled') !== 'false';
   });
+
+  // Global Fetch Interceptor for Generic Premium Progress Bar
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    let progressInterval: any = null;
+    let activeReqCount = 0;
+
+    window.fetch = async (...args) => {
+      activeReqCount++;
+      if (activeReqCount === 1) {
+        setProgress(15);
+        if (progressInterval) clearInterval(progressInterval);
+        progressInterval = setInterval(() => {
+          setProgress(p => {
+            if (p < 85) return p + Math.random() * 6;
+            return p + Math.random() * 0.4;
+          });
+        }, 150);
+      }
+
+      try {
+        const response = await originalFetch(...args);
+        return response;
+      } finally {
+        activeReqCount--;
+        if (activeReqCount <= 0) {
+          activeReqCount = 0;
+          if (progressInterval) clearInterval(progressInterval);
+          setProgress(100);
+          setTimeout(() => {
+            setProgress(0);
+          }, 300);
+        }
+      }
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+      if (progressInterval) clearInterval(progressInterval);
+    };
+  }, []);
 
   // Dark Mode effect
   useEffect(() => {
@@ -123,6 +165,13 @@ function App() {
 
   return (
     <div className="w-full relative min-h-screen">
+      {/* Generic Premium Progress Bar */}
+      {progress > 0 && (
+        <div 
+          className="fixed top-0 left-0 h-[3px] z-[999999] bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 dark:from-yellow-400 dark:via-amber-500 dark:to-orange-500 shadow-[0_0_12px_rgba(59,130,246,0.8)] dark:shadow-[0_0_12px_rgba(245,158,11,0.9)] transition-all duration-300 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      )}
       {page === 'home' && (
         <Home 
           onSelectPost={handleSelectPost} 
