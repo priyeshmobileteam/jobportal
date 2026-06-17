@@ -127,6 +127,37 @@ public class AdminPostController {
         return ResponseEntity.ok(uploadedPdfRepository.findAll());
     }
 
+    // Delete PDF by ID (clean up disk and database)
+    @DeleteMapping("/delete-pdf/{id}")
+    public ResponseEntity<?> deletePdf(@PathVariable Long id) {
+        try {
+            java.util.Optional<UploadedPdf> pdfOpt = uploadedPdfRepository.findById(id);
+            if (pdfOpt.isPresent()) {
+                UploadedPdf pdf = pdfOpt.get();
+                // Delete the physical file from disk
+                String userDir = System.getProperty("user.dir");
+                String fileUrl = pdf.getUrl();
+                if (fileUrl != null && fileUrl.startsWith("/uploads/")) {
+                    String filename = fileUrl.substring(9);
+                    File fileOnDisk = new File(new File(userDir, "uploads"), filename);
+                    if (fileOnDisk.exists()) {
+                        fileOnDisk.delete();
+                        System.out.println("Deleted physical PDF file: " + fileOnDisk.getAbsolutePath());
+                    }
+                }
+                // Delete database record
+                uploadedPdfRepository.deleteById(id);
+                Map<String, String> res = new HashMap<>();
+                res.put("message", "PDF deleted successfully");
+                return ResponseEntity.ok().body(res);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Failed to delete PDF: " + e.getMessage());
+        }
+    }
+
     // Fetch and parse single URL details dynamically
     @PostMapping("/fetch-url")
     public ResponseEntity<?> fetchSingleUrl(@RequestBody Map<String, String> body) {

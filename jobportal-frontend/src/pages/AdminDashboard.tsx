@@ -530,6 +530,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       .catch(err => alert(err.message));
   };
 
+  const handleDeletePdf = (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this PDF file? This will permanently remove the physical file from the server.')) return;
+
+    fetch(`${API_BASE_URL}/api/admin/posts/delete-pdf/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to delete PDF');
+        return res.json();
+      })
+      .then(() => {
+        fetchPdfs();
+        alert('PDF deleted successfully!');
+      })
+      .catch(err => alert(err.message));
+  };
+
   const resetForm = () => {
     setIsEditing(false);
     setCurrentPostId(null);
@@ -1375,12 +1393,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                       <th className="p-3">Display Name</th>
                       <th className="p-3">URL / Link</th>
                       <th className="p-3 text-center">Uploaded Date</th>
+                      <th className="p-3 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {loadingPdfs ? (
                       <tr>
-                        <td colSpan={3} className="p-8 text-center text-slate-500">Loading PDFs...</td>
+                        <td colSpan={4} className="p-8 text-center text-slate-500">Loading PDFs...</td>
                       </tr>
                     ) : pdfs.length > 0 ? (
                       pdfs.map(pdf => (
@@ -1394,11 +1413,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                           <td className="p-3 text-center text-slate-400">
                             {new Date(pdf.uploadedAt).toLocaleDateString('en-IN')}
                           </td>
+                          <td className="p-3 text-center">
+                            <button
+                              onClick={() => handleDeletePdf(pdf.id)}
+                              className="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer"
+                              title="Delete PDF"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={3} className="p-8 text-center text-slate-400">No PDFs uploaded yet. Use the upload box above.</td>
+                        <td colSpan={4} className="p-8 text-center text-slate-400">No PDFs uploaded yet. Use the upload box above.</td>
                       </tr>
                     )}
                   </tbody>
