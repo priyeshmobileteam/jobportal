@@ -830,7 +830,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                   >
                     <option value="">-- Select Uploaded PDF --</option>
                     {pdfs.map(pdf => (
-                      <option key={pdf.id} value={`${API_BASE_URL}${pdf.url}`}>{pdf.name}</option>
+                      <option key={pdf.id} value={pdf.url}>{pdf.name}</option>
                     ))}
                   </select>
                   <input
@@ -852,7 +852,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                   >
                     <option value="">-- Select Uploaded PDF --</option>
                     {pdfs.map(pdf => (
-                      <option key={pdf.id} value={`${API_BASE_URL}${pdf.url}`}>{pdf.name}</option>
+                      <option key={pdf.id} value={pdf.url}>{pdf.name}</option>
                     ))}
                   </select>
                   <input
@@ -1406,7 +1406,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         <tr key={pdf.id} className="hover:bg-slate-50">
                           <td className="p-3 font-semibold text-slate-800">{pdf.name}</td>
                           <td className="p-3 font-mono text-slate-500 max-w-[250px] truncate">
-                            <a href={`${API_BASE_URL}${pdf.url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                            <a href={pdf.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
                               {pdf.url}
                             </a>
                           </td>

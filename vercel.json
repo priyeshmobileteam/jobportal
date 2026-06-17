@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://nokri-online.onrender.com/uploads/:path*"
+    }
+  ]
+}

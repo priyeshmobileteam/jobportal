@@ -96,6 +96,11 @@ export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
     );
   }
 
+  const cleanUrl = (url?: string | null): string => {
+    if (!url) return '';
+    return url.replace(/^https?:\/\/nokri-online\.onrender\.com\/uploads\//i, '/uploads/');
+  };
+
   const isSarkariLink = (url?: string | null): boolean => {
     if (!url) return true;
     const lowerUrl = url.toLowerCase();
@@ -113,7 +118,11 @@ export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
       const doc = parser.parseFromString(htmlStr, 'text/html');
       const links = doc.querySelectorAll('a');
       links.forEach(link => {
-        const href = link.getAttribute('href');
+        let href = link.getAttribute('href');
+        if (href) {
+          href = cleanUrl(href);
+          link.setAttribute('href', href);
+        }
         const text = (link.textContent || '').toLowerCase();
 
         // 1. Redirect Telegram or WhatsApp links to their respective custom channels
@@ -341,7 +350,7 @@ export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
                       </span>
                     ) : (
                       <a
-                        href={post.applyOnlineUrl || '#'}
+                        href={cleanUrl(post.applyOnlineUrl) || '#'}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded text-xs transition-colors shadow-sm"
@@ -355,7 +364,7 @@ export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
                   <td className="p-3 font-semibold text-slate-700">Download Official Notification File</td>
                   <td className="p-3 text-center">
                     <a
-                      href={isSarkariLink(post.officialNotificationUrl) ? '/coming_soon.pdf' : (post.officialNotificationUrl || '/coming_soon.pdf')}
+                      href={isSarkariLink(post.officialNotificationUrl) ? '/coming_soon.pdf' : (cleanUrl(post.officialNotificationUrl) || '/coming_soon.pdf')}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded text-xs transition-colors shadow-sm"
@@ -373,7 +382,7 @@ export const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
                       </span>
                     ) : (
                       <a
-                        href={post.officialWebsiteUrl || '#'}
+                        href={cleanUrl(post.officialWebsiteUrl) || '#'}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 bg-slate-700 hover:bg-slate-800 text-white font-bold py-1.5 px-4 rounded text-xs transition-colors shadow-sm"
