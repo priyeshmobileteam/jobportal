@@ -15,6 +15,9 @@ public class PostService {
     @Autowired
     private PostRepository postRepository;
 
+    @Autowired
+    private com.sarkariresult.clone.repository.ScrapedPostRepository scrapedPostRepository;
+
     public List<Post> getAllPosts() {
         return postRepository.findAllByOrderByIdDesc();
     }
@@ -53,6 +56,35 @@ public class PostService {
 
     @Transactional
     public void deleteAllPosts() {
+        List<Post> allPosts = postRepository.findAll();
+        List<com.sarkariresult.clone.model.ScrapedPost> backups = new ArrayList<>();
+        for (Post p : allPosts) {
+            com.sarkariresult.clone.model.ScrapedPost b = new com.sarkariresult.clone.model.ScrapedPost();
+            b.setOriginalPostId(p.getId());
+            b.setTitle(p.getTitle());
+            b.setCategory(p.getCategory());
+            b.setPostDate(p.getPostDate());
+            b.setLastUpdateDate(p.getLastUpdateDate());
+            b.setShortInfo(p.getShortInfo());
+            b.setTotalPosts(p.getTotalPosts());
+            b.setApplicationStartDate(p.getApplicationStartDate());
+            b.setApplicationEndDate(p.getApplicationEndDate());
+            b.setFeeDetails(p.getFeeDetails());
+            b.setAgeLimits(p.getAgeLimits());
+            b.setVacancyDetails(p.getVacancyDetails());
+            b.setOfficialNotificationUrl(p.getOfficialNotificationUrl());
+            b.setApplyOnlineUrl(p.getApplyOnlineUrl());
+            b.setOfficialWebsiteUrl(p.getOfficialWebsiteUrl());
+            b.setViews(p.getViews());
+            b.setIsHotLink(p.getIsHotLink());
+            b.setHotLinkTitle(p.getHotLinkTitle());
+            b.setHotLinkOrder(p.getHotLinkOrder());
+            backups.add(b);
+        }
+        if (!backups.isEmpty()) {
+            scrapedPostRepository.saveAll(backups);
+            System.out.println("PostService: Successfully backed up " + backups.size() + " posts to scraped_posts table.");
+        }
         postRepository.deleteAll();
     }
 

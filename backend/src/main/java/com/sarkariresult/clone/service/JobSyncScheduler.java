@@ -25,8 +25,7 @@ public class JobSyncScheduler {
     private static final String SARKARI_URL = "https://www.sarkariresult.com";
     private static final String USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
-    // Runs initially on startup after 10 seconds, then every 2 hours
-    @Scheduled(initialDelay = 10000, fixedRateString = "7200000")
+    // Runs only when triggered manually via controller
     public void syncSarkariResultData() {
         System.out.println("Starting automatic sync from sarkariresult.com at " + LocalDateTime.now());
         try {
