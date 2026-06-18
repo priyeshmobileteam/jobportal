@@ -29,7 +29,7 @@ export const AdSensePlaceholder: React.FC<AdSensePlaceholderProps> = ({
 
   // Configurable Publisher ID helper (global)
   const [pubId, setPubIdState] = useState(() => {
-    return localStorage.getItem('adsense_pub_id') || 'ca-pub-XXXXXXXXXXXXXXXX';
+    return localStorage.getItem('adsense_pub_id') || 'ca-pub-6082042405894709';
   });
 
   // Numeric Slot ID helper (per-slot configuration)
@@ -51,6 +51,7 @@ export const AdSensePlaceholder: React.FC<AdSensePlaceholderProps> = ({
   };
 
   const isMock = pubId.includes('X') || pubId.trim() === '';
+  const isAdmin = localStorage.getItem('user_role') === 'ADMIN' || localStorage.getItem('admin_token') !== null;
 
   useEffect(() => {
     if (!isMock) {
@@ -75,6 +76,9 @@ export const AdSensePlaceholder: React.FC<AdSensePlaceholderProps> = ({
 
   // Render mock view if pubId is ca-pub-XXXXXXXXXX123456 or similar mockup ID
   if (isMock) {
+    if (!isAdmin) {
+      return null;
+    }
     return (
       <div className={`my-4 relative bg-yellow-50/40 border border-yellow-200 rounded-lg overflow-hidden p-4 min-h-[90px] flex flex-col justify-center items-center text-center transition-all hover:bg-yellow-50/70 group ${className}`}>
         <div className="absolute top-1 right-2 text-[10px] text-yellow-600 font-semibold uppercase tracking-wider flex items-center gap-1">
