@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Home } from './pages/Home';
 import { PostDetail } from './pages/PostDetail';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { StaticPage } from './pages/StaticPage';
 import { Settings, X, Volume2, VolumeX } from 'lucide-react';
 
-type PageState = 'home' | 'detail' | 'admin';
+type PageState = 'home' | 'detail' | 'admin' | 'about' | 'contact' | 'privacy' | 'terms' | 'disclaimer';
 type ColorTheme = 'blue' | 'green' | 'purple' | 'orange' | 'red';
 type TextSize = 'small' | 'normal' | 'large';
 
@@ -134,6 +135,9 @@ function App() {
       } else if (event.state && event.state.page === 'admin') {
         setPage('admin');
         setSelectedPostId(null);
+      } else if (event.state && ['about', 'contact', 'privacy', 'terms', 'disclaimer'].includes(event.state.page)) {
+        setPage(event.state.page);
+        setSelectedPostId(null);
       } else {
         setPage('home');
         setSelectedPostId(null);
@@ -163,6 +167,11 @@ function App() {
     window.history.pushState({ page: 'admin' }, '');
   };
 
+  const handleNavigateToStatic = (staticPage: PageState) => {
+    setPage(staticPage);
+    window.history.pushState({ page: staticPage }, '');
+  };
+
   return (
     <div className="w-full relative min-h-screen">
       {/* Generic Premium Progress Bar */}
@@ -176,6 +185,7 @@ function App() {
         <Home 
           onSelectPost={handleSelectPost} 
           onNavigateToAdmin={handleNavigateToAdmin} 
+          onNavigateToStatic={handleNavigateToStatic}
         />
       )}
       {page === 'detail' && selectedPostId !== null && (
@@ -186,6 +196,12 @@ function App() {
       )}
       {page === 'admin' && (
         <AdminDashboard 
+          onBack={handleBackToHome} 
+        />
+      )}
+      {['about', 'contact', 'privacy', 'terms', 'disclaimer'].includes(page) && (
+        <StaticPage 
+          type={page as any} 
           onBack={handleBackToHome} 
         />
       )}

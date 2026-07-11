@@ -17,12 +17,13 @@ interface Post {
 interface HomeProps {
   onSelectPost: (id: number) => void;
   onNavigateToAdmin: () => void;
+  onNavigateToStatic: (page: any) => void;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (window.location.port === '5173' ? 'http://localhost:8085' : 'https://nokri-online.onrender.com');
 
-export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) => {
+export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin, onNavigateToStatic }) => {
   const [groupedPosts, setGroupedPosts] = useState<Record<string, Post[]>>({});
   const [totalViews, setTotalViews] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -596,6 +597,13 @@ export const Home: React.FC<HomeProps> = ({ onSelectPost, onNavigateToAdmin }) =
               </tr>
             </tbody>
           </table>
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6 text-xs text-blue-450 font-semibold">
+            <button onClick={() => onNavigateToStatic('about')} className="hover:underline cursor-pointer bg-transparent border-0 text-blue-400 font-semibold p-0">About Us</button>
+            <button onClick={() => onNavigateToStatic('contact')} className="hover:underline cursor-pointer bg-transparent border-0 text-blue-400 font-semibold p-0">Contact Us</button>
+            <button onClick={() => onNavigateToStatic('privacy')} className="hover:underline cursor-pointer bg-transparent border-0 text-blue-400 font-semibold p-0">Privacy Policy</button>
+            <button onClick={() => onNavigateToStatic('terms')} className="hover:underline cursor-pointer bg-transparent border-0 text-blue-400 font-semibold p-0">Terms & Conditions</button>
+            <button onClick={() => onNavigateToStatic('disclaimer')} className="hover:underline cursor-pointer bg-transparent border-0 text-blue-400 font-semibold p-0">Disclaimer</button>
+          </div>
           <p>© 2026 Nokri.online. All Rights Reserved.</p>
           <p className="text-slate-500 mt-1">Designated trademarks and brands are the property of their respective owners.</p>
         </div>
